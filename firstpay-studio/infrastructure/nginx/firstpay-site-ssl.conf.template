@@ -1,0 +1,61 @@
+# FirstPay Studio — site nginx hôte, variante HTTPS (généré par setup-nginx-production.sh).
+# Utilisée dès qu'un certificat Let's Encrypt existe pour ${DOMAIN}
+# (/etc/letsencrypt/live/${DOMAIN}/). Redirige tout le trafic HTTP vers HTTPS et
+# proxifie l'application en TLS. Ne pas éditer sur le serveur : modifier le
+# template puis relancer le script.
+#
+# Docker (127.0.0.1) :
+#   frontend       → ${NGINX_FRONTEND_PORT}  (portail admin)
+#   api-gateway    → ${NGINX_GATEWAY_PORT}  (API + /public/ direct)
+#   payer-frontend → ${NGINX_PAYER_PORT}     (pages payeur /{shortCode}/{slug})
+
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+upstream firstpay_frontend {
+    server 127.0.0.1:${NGINX_FRONTEND_PORT};
+    keepalive 16;
+}
+
+upstream firstpay_gateway {
+    server 127.0.0.1:${NGINX_GATEWAY_PORT};
+    keepalive 16;
+}
+
+upstream firstpay_payer {
+    server 127.0.0.1:${NGINX_PAYER_PORT};
+    keepalive 16;
+}
+
+# ── HTTP → redirection HTTPS (garde le challenge ACME sur le port 80) ─────────
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${DOMAIN};
+
+    # Let's Encrypt HTTP-01 (Certbot / renouvellement)
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/html;
+        default_type "text/plain";
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# ── HTTPS (certificat Let's Encrypt ${DOMAIN}) ────────────────────────────────
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name ${DOMAIN};
+
+    ssl_certificate     /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    include /etc/nginx/snippets/firstpay-locations.conf;
+}

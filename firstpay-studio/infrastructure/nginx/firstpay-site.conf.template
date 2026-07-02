@@ -1,4 +1,7 @@
-# FirstPay Studio — site nginx hôte (généré par setup-nginx-production.sh).
+# FirstPay Studio — site nginx hôte, variante HTTP seule (généré par setup-nginx-production.sh).
+# Utilisée tant qu'aucun certificat Let's Encrypt n'existe pour ${DOMAIN}
+# (bootstrap / émission via certbot). Dès que le certificat est présent, le script
+# génère plutôt firstpay-site-ssl.conf.template (redirection 80→443 + bloc HTTPS).
 # Ne pas éditer sur le serveur : modifier le template puis relancer le script.
 #
 # Docker (127.0.0.1) :
@@ -26,7 +29,7 @@ upstream firstpay_payer {
     keepalive 16;
 }
 
-# ── HTTP (Certbot ou accès direct) ───────────────────────────────────────────
+# ── HTTP (proxy direct — aucun certificat encore émis) ────────────────────────
 server {
     listen 80;
     listen [::]:80;
@@ -38,67 +41,5 @@ server {
         default_type "text/plain";
     }
 
-    location /webhooks/ {
-        proxy_pass http://firstpay_gateway;
-        include /etc/nginx/snippets/firstpay-proxy.conf;
-        proxy_read_timeout 60s;
-    }
-
-    location /api/ {
-        proxy_pass http://firstpay_gateway;
-        include /etc/nginx/snippets/firstpay-proxy.conf;
-        proxy_buffering off;
-        proxy_read_timeout 300s;
-    }
-
-    # API publique (résolution directe gateway — secours si page payeur indisponible)
-    location /public/ {
-        proxy_pass http://firstpay_gateway;
-        include /etc/nginx/snippets/firstpay-proxy.conf;
-        proxy_buffering off;
-    }
-
-    location /swagger-ui {
-        proxy_pass http://firstpay_gateway;
-        include /etc/nginx/snippets/firstpay-proxy.conf;
-    }
-
-    location /v3/api-docs {
-        proxy_pass http://firstpay_gateway;
-        include /etc/nginx/snippets/firstpay-proxy.conf;
-    }
-
-    location /webjars {
-        proxy_pass http://firstpay_gateway;
-        include /etc/nginx/snippets/firstpay-proxy.conf;
-    }
-
-    # Routes du portail Angular (authGuard)
-    location ~ ^/(login|home|studio|transactions|users|settings|admin_home|partners|transactions_all|audit|settings_platform|cashier|cashier_history)(/|$) {
-        proxy_pass http://firstpay_frontend;
-        include /etc/nginx/snippets/firstpay-proxy.conf;
-        proxy_set_header Upgrade           $http_upgrade;
-        proxy_set_header Connection        $connection_upgrade;
-    }
-
-    # Page payeur publique : /{shortCode}/{slug}
-    location ~ ^/[A-Za-z0-9_-]+/[a-z0-9][a-z0-9_-]*/?$ {
-        proxy_pass http://firstpay_payer;
-        include /etc/nginx/snippets/firstpay-proxy.conf;
-    }
-
-    location = / {
-        proxy_pass http://firstpay_frontend;
-        include /etc/nginx/snippets/firstpay-proxy.conf;
-    }
-
-    location / {
-        proxy_pass http://firstpay_frontend;
-        include /etc/nginx/snippets/firstpay-proxy.conf;
-        proxy_set_header Upgrade           $http_upgrade;
-        proxy_set_header Connection        $connection_upgrade;
-    }
+    include /etc/nginx/snippets/firstpay-locations.conf;
 }
-
-# ── HTTPS (bloc ajouté par Certbot ou activé si certificat déjà présent) ─────
-# Le script setup-nginx-production.sh peut fusionner un bloc SSL via certbot --nginx.

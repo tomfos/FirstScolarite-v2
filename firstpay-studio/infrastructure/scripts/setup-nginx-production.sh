@@ -109,6 +109,37 @@ stop_firstpay_caddy_only() {
   fi
 }
 
+# Reload nginx en gérant les cas dégradés : service systemd inactif/failed
+# (un master a été démarré manuellement) et /run/nginx.pid vide.
+reload_nginx() {
+  nginx -t || { warn "nginx -t a échoué — reload annulé."; return 1; }
+
+  systemctl enable nginx 2>/dev/null || true
+
+  # 1) Chemin nominal : systemd gère nginx.
+  if systemctl is-active --quiet nginx 2>/dev/null; then
+    systemctl reload nginx && { log "nginx rechargé via systemd."; return 0; }
+  fi
+
+  # 2) Un master tourne hors systemd → signal HUP direct au master.
+  local master
+  master=$(pgrep -f 'nginx: master process' | head -1 || true)
+  if [[ -n "${master}" ]]; then
+    if nginx -s reload 2>/dev/null; then
+      log "nginx rechargé via 'nginx -s reload'."
+      return 0
+    fi
+    kill -HUP "${master}" && { log "nginx rechargé (HUP → master ${master})."; return 0; }
+  fi
+
+  # 3) Aucun master → tentative de démarrage.
+  systemctl start nginx 2>/dev/null && { log "nginx démarré via systemd."; return 0; }
+  nginx && { log "nginx démarré."; return 0; }
+
+  warn "Impossible de recharger/démarrer nginx — intervention manuelle requise."
+  return 1
+}
+
 install_nginx_config() {
   require_cmd nginx
   require_cmd envsubst
@@ -116,19 +147,37 @@ install_nginx_config() {
   local domain="${DOMAIN}"
   local snippet_src="${PROJECT_ROOT}/infrastructure/nginx/snippets/firstpay-proxy.conf"
   local snippet_dst="/etc/nginx/snippets/firstpay-proxy.conf"
-  local template="${PROJECT_ROOT}/infrastructure/nginx/firstpay-site.conf.template"
+  local locations_src="${PROJECT_ROOT}/infrastructure/nginx/snippets/firstpay-locations.conf"
+  local locations_dst="/etc/nginx/snippets/firstpay-locations.conf"
+  local template_http="${PROJECT_ROOT}/infrastructure/nginx/firstpay-site.conf.template"
+  local template_ssl="${PROJECT_ROOT}/infrastructure/nginx/firstpay-site-ssl.conf.template"
   local generated="${PROJECT_ROOT}/infrastructure/nginx/generated/${domain}.conf"
   local available="/etc/nginx/sites-available/${domain}"
   local enabled="/etc/nginx/sites-enabled/${domain}"
 
-  [[ -f "$template" ]] || die "Template introuvable : ${template}"
-  [[ -f "$snippet_src" ]] || die "Snippet introuvable : ${snippet_src}"
+  [[ -f "$template_http" ]] || die "Template introuvable : ${template_http}"
+  [[ -f "$template_ssl" ]]  || die "Template introuvable : ${template_ssl}"
+  [[ -f "$snippet_src" ]]   || die "Snippet introuvable : ${snippet_src}"
+  [[ -f "$locations_src" ]] || die "Snippet introuvable : ${locations_src}"
 
   mkdir -p "${PROJECT_ROOT}/infrastructure/nginx/generated"
   mkdir -p /etc/nginx/snippets
 
-  log "Installation du snippet nginx…"
+  log "Installation des snippets nginx…"
   cp "$snippet_src" "$snippet_dst"
+  cp "$locations_src" "$locations_dst"
+
+  # Choix du template : HTTPS si le certificat Let's Encrypt existe déjà, sinon
+  # HTTP seul (bootstrap / avant émission certbot). Rend le HTTPS durable :
+  # chaque régénération réinjecte le bloc 443 tant que le certificat est présent.
+  local template
+  if [[ -f "/etc/letsencrypt/live/${domain}/fullchain.pem" ]]; then
+    template="$template_ssl"
+    log "Certificat détecté → génération avec bloc HTTPS (443 + redirection 80→443)."
+  else
+    template="$template_http"
+    log "Aucun certificat pour ${domain} → génération HTTP seule (lancez certbot ensuite)."
+  fi
 
   if [[ -f "$available" ]]; then
     cp "$available" "${available}.bak.$(date +%Y%m%d_%H%M%S)"
@@ -151,9 +200,7 @@ install_nginx_config() {
     die "nginx -t a échoué — vérifiez ${available}"
   fi
 
-  systemctl enable nginx 2>/dev/null || true
-  systemctl start nginx 2>/dev/null || true
-  systemctl reload nginx
+  reload_nginx
   log "nginx rechargé — ${available}"
 }
 
@@ -163,7 +210,9 @@ run_certbot_if_requested() {
   log "Obtention / renouvellement certificat Let's Encrypt pour ${DOMAIN}…"
   certbot --nginx -d "${DOMAIN}" --non-interactive --agree-tos -m "${SSL_EMAIL}" \
     || warn "Certbot a échoué — le site reste accessible en HTTP."
-  nginx -t && systemctl reload nginx
+  # Régénère le site avec le bloc HTTPS maintenant que le certificat existe,
+  # puis reload (certbot a pu modifier le fichier ; on repart du template).
+  install_nginx_config
 }
 
 start_docker_stack() {
