@@ -70,18 +70,25 @@ public class PartnerStore {
                 .bind("config", config).bind("hash", apiKeyHash)
                 .fetch().rowsUpdated().then();
 
+            // Pas de ON CONFLICT ... DO NOTHING ici : on veut que l'échec de création de
+            // l'admin (insert à 0 ligne, ex. email déjà pris) remonte et fasse échouer +
+            // rollback toute la création, plutôt que de renvoyer un faux succès avec un mot
+            // de passe temporaire pour un compte qui n'existe pas.
             Mono<Void> insertAdmin = (req.adminEmail() == null || req.adminEmail().isBlank())
                 ? Mono.empty()
                 : db.sql("""
                     INSERT INTO partner_users (id, tenant_id, name, email, role, status, password_hash)
                     VALUES (:id, :t, :name, :email, 'partner_admin', 'active', :pwd)
-                    ON CONFLICT (tenant_id, email) DO NOTHING
                     """)
                     .bind("id", UUID.randomUUID()).bind("t", tenantId)
                     .bind("name", req.adminName() != null ? req.adminName() : "Administrateur")
                     .bind("email", req.adminEmail())
                     .bind("pwd", passwordHash)
-                    .fetch().rowsUpdated().then();
+                    .fetch().rowsUpdated()
+                    .flatMap(n -> n == 1
+                        ? Mono.<Void>empty()
+                        : Mono.<Void>error(new IllegalStateException(
+                            "Création de l'administrateur du partenaire échouée (email=" + req.adminEmail() + ")")));
 
             Mono<Void> insertSettings = db.sql("""
                     INSERT INTO partner_settings (tenant_id, brand_color, notifications)
