@@ -3,16 +3,26 @@
 export type InterfaceStatus = 'brouillon' | 'actif' | 'pause';
 export type AmountType = 'fixed' | 'preset' | 'free';
 export type RefType = 'auto' | 'custom';
-export type FieldType = 'text' | 'select';
+export type FieldType = 'text' | 'select' | 'date' | 'phone';
 export type Method = 'orange' | 'mtn' | 'card' | 'transfer';
 
-export interface Preset { id: number; label: string; amount: string; }
+export interface Preset {
+  id: number;
+  label: string;
+  amount: string;
+  /** Autorise un versement partiel (acompte) entre `minAmount` et `amount`. */
+  allowPartial?: boolean;
+  /** Minimum à verser quand l'acompte est autorisé. */
+  minAmount?: string;
+}
 
 export interface CustomField {
   id: string;
   type: FieldType;
   label: string;
   required: boolean;
+  /** Champ non modifiable par le payeur (auto-rempli depuis les données importées). */
+  readonly?: boolean;
   options?: string[];
 }
 

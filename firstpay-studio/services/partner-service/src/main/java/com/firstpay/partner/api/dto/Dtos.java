@@ -7,9 +7,14 @@ import java.util.Map;
 public final class Dtos {
     private Dtos() {}
 
-    public record InterfaceFieldDto(String id, String type, String label, boolean required, List<String> options) {}
+    public record InterfaceFieldDto(String id, String type, String label, boolean required,
+                                    boolean readonly, List<String> options) {}
 
-    public record PresetDto(long id, String label, String amount) {}
+    /**
+     * Frais proposé. `allowPartial` autorise un versement partiel (acompte) : le payeur peut régler
+     * un montant compris entre `minAmount` (minimum à verser) et `amount` (montant complet).
+     */
+    public record PresetDto(long id, String label, String amount, boolean allowPartial, String minAmount) {}
 
     public record InterfaceDto(
         String id, String tenantId, String name, String description, String sector,
@@ -69,11 +74,14 @@ public final class Dtos {
 
     /**
      * Requête d'initiation de paiement envoyée par la page payeur publique.
-     * `amount` est ignoré pour amountType=fixed ; `presetId` sert pour amountType=preset ;
-     * `fields` mappe l'ID de champ personnalisé → valeur saisie.
+     * `amount` est ignoré pour amountType=fixed ; `presetId` sert pour amountType=preset (sélection simple) ;
+     * `presetIds` remplace `presetId` quand l'interface autorise la sélection multiple (panier de frais) ;
+     * `presetAmounts` mappe l'ID d'un frais → montant partiel saisi (acompte), pris en compte uniquement
+     * si le frais autorise l'acompte ; `fields` mappe l'ID de champ personnalisé → valeur saisie.
      */
     public record PublicPayRequest(
-        String method, String amount, String phone, String payer, Long presetId, Map<String, String> fields
+        String method, String amount, String phone, String payer, Long presetId,
+        List<Long> presetIds, Map<String, String> presetAmounts, Map<String, String> fields
     ) {}
 
     /** Réponse d'initiation : la transaction est créée (PENDING) côté plateforme. */

@@ -1,5 +1,5 @@
 import { Component, computed, input } from '@angular/core';
-import { PaymentInterface, METHOD_LABELS, Method } from '../../core/models/interface.model';
+import { CustomField, PaymentInterface, METHOD_LABELS, Method } from '../../core/models/interface.model';
 import { Partner } from '../../core/tenant/tenant-context.service';
 
 /** Aperçu de la page de paiement publique (mobile-like), reflète la config en direct. */
@@ -28,7 +28,13 @@ import { Partner } from '../../core/tenant/tenant-context.service';
                 <div class="lbl">Choisissez {{ data().multiSelect ? 'un ou plusieurs montants' : 'un montant' }}</div>
                 <div class="presets">
                   @for (p of validPresets(); track p.id) {
-                    <div class="preset"><span>{{ p.label || 'Montant' }}</span><b>{{ fr(+p.amount || 0) }} {{ data().currency }}</b></div>
+                    <div class="preset">
+                      <span>
+                        {{ p.label || 'Montant' }}
+                        @if (p.allowPartial) { <em class="acompte">acompte dès {{ fr(+(p.minAmount || 0)) }}</em> }
+                      </span>
+                      <b>{{ fr(+p.amount || 0) }} {{ data().currency }}</b>
+                    </div>
                   }
                 </div>
               }
@@ -45,7 +51,7 @@ import { Partner } from '../../core/tenant/tenant-context.service';
               @for (f of data().customFields; track f.id) {
                 <div class="field">
                   <div class="f-lbl">{{ f.label }} @if (f.required) { <span class="req">*</span> }</div>
-                  <div class="f-box">{{ f.type === 'select' ? 'Sélectionner…' : 'Saisir…' }}</div>
+                  <div class="f-box" [class.readonly]="f.readonly">{{ fieldPlaceholder(f) }}</div>
                 </div>
               }
             </div>
@@ -77,4 +83,13 @@ export class PaymentPreviewComponent {
 
   fr(n: number) { return n.toLocaleString('fr-FR'); }
   label(m: Method) { return METHOD_LABELS[m]; }
+  fieldPlaceholder(f: CustomField): string {
+    if (f.readonly) return 'Auto-rempli';
+    switch (f.type) {
+      case 'select': return 'Sélectionner…';
+      case 'date': return 'JJ/MM/AAAA';
+      case 'phone': return '+237 6XX XX XX XX';
+      default: return 'Saisir…';
+    }
+  }
 }

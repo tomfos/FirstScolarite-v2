@@ -78,15 +78,27 @@ const METHODS: Method[] = ['orange', 'mtn', 'card', 'transfer'];
                     <div class="presets-head"><span>Montants prédéfinis</span>
                       <button class="add" (click)="addPreset()">+ Ajouter</button></div>
                     @for (p of d.presets; track p.id; let i = $index) {
-                      <div class="preset-row">
-                        <input placeholder="Libellé" [ngModel]="p.label" (ngModelChange)="patchPreset(i, { label: $event })">
-                        <input type="number" placeholder="Montant" [ngModel]="p.amount" (ngModelChange)="patchPreset(i, { amount: $event })">
-                        <button class="rm" (click)="removePreset(i)" [disabled]="d.presets.length === 1">✕</button>
+                      <div class="preset-card" [class.partial-on]="p.allowPartial">
+                        <div class="preset-row">
+                          <input placeholder="Libellé" [ngModel]="p.label" (ngModelChange)="patchPreset(i, { label: $event })">
+                          <input type="number" placeholder="Montant" [ngModel]="p.amount" (ngModelChange)="patchPreset(i, { amount: $event })">
+                          <button class="rm" (click)="removePreset(i)" [disabled]="d.presets.length === 1">✕</button>
+                        </div>
+                        <div class="preset-partial">
+                          <label class="toggle small">
+                            <input type="checkbox" [ngModel]="!!p.allowPartial" (ngModelChange)="patchPreset(i, { allowPartial: $event })">
+                            <span>Acompte autorisé (versement partiel)</span>
+                          </label>
+                          @if (p.allowPartial) {
+                            <label class="min-field"><span>Minimum à verser ({{ d.currency }})</span>
+                              <input type="number" placeholder="0" [ngModel]="p.minAmount" (ngModelChange)="patchPreset(i, { minAmount: $event })"></label>
+                          }
+                        </div>
                       </div>
                     }
                     <label class="toggle">
                       <input type="checkbox" [ngModel]="d.multiSelect" (ngModelChange)="patch({ multiSelect: $event })">
-                      <span>Autoriser la sélection de plusieurs montants</span>
+                      <span>Autoriser la sélection de plusieurs montants (panier)</span>
                     </label>
                   }
                   @case ('free') {
@@ -124,6 +136,7 @@ const METHODS: Method[] = ['orange', 'mtn', 'card', 'transfer'];
                       <input class="grow" placeholder="Libellé du champ" [ngModel]="f.label" (ngModelChange)="patchField(i, { label: $event })">
                       <select [ngModel]="f.type" (ngModelChange)="patchField(i, { type: $event })">
                         <option value="text">Texte</option><option value="select">Liste</option>
+                        <option value="date">Date</option><option value="phone">Téléphone</option>
                       </select>
                       <button class="rm" (click)="removeField(i)">✕</button>
                     </div>
@@ -131,10 +144,16 @@ const METHODS: Method[] = ['orange', 'mtn', 'card', 'transfer'];
                       <input class="opts" placeholder="Options séparées par des virgules" [ngModel]="(f.options || []).join(', ')"
                              (ngModelChange)="patchField(i, { options: split($event) })">
                     }
-                    <label class="toggle small">
-                      <input type="checkbox" [ngModel]="f.required" (ngModelChange)="patchField(i, { required: $event })">
-                      <span>Champ obligatoire</span>
-                    </label>
+                    <div class="field-toggles">
+                      <label class="toggle small">
+                        <input type="checkbox" [ngModel]="f.required" (ngModelChange)="patchField(i, { required: $event })">
+                        <span>Champ obligatoire</span>
+                      </label>
+                      <label class="toggle small">
+                        <input type="checkbox" [ngModel]="!!f.readonly" (ngModelChange)="patchField(i, { readonly: $event })">
+                        <span>Lecture seule (auto-rempli)</span>
+                      </label>
+                    </div>
                   </div>
                 } @empty { <div class="muted">Aucun champ — la collecte demandera seulement le montant.</div> }
               }

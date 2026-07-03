@@ -3,6 +3,10 @@
  * Flux : résout l'URL /{shortCode}/{slug} via l'API publique, rend le parcours conçu par le
  * partenaire, initie le paiement puis interroge le statut jusqu'à l'état final.
  * Toute la validation faisant autorité est côté serveur ; ici on ne fait qu'assister la saisie.
+ *
+ * Prend en charge : montant fixe / libre / prédéfini, sélection multiple (panier de frais),
+ * acompte (versement partiel ≥ minimum), champs texte/liste/date/téléphone et champs
+ * en lecture seule (auto-remplis, non saisis par le payeur).
  */
 (function () {
   'use strict';
@@ -17,7 +21,8 @@
   var shortCode = segs[segs.length - 2];
   var slug = segs[segs.length - 1];
 
-  var state = { data: null, method: null, presetId: null };
+  // presetSel : id -> { on: bool, custom: string }  (custom = acompte saisi, '' = montant complet)
+  var state = { data: null, method: null, presetSel: {} };
 
   if (!shortCode || !slug) { renderError('Lien de paiement invalide.', 'Vérifiez l’adresse reçue.'); return; }
 
@@ -35,6 +40,7 @@
     });
 
   function money(n) { return Number(n).toLocaleString('fr-FR'); }
+  function num(v) { var n = parseFloat(v); return isFinite(n) ? n : 0; }
 
   function applyBrand(d) {
     merchantEl.textContent = d.merchant.name || 'FirstPay';
@@ -42,6 +48,32 @@
     if (d.merchant.logoUrl) { logoEl.innerHTML = ''; var img = document.createElement('img'); img.src = d.merchant.logoUrl; img.alt = ''; logoEl.appendChild(img); }
     else logoEl.textContent = (d.merchant.shortCode || 'FP').slice(0, 4).toUpperCase();
     document.title = 'Payer · ' + (d.name || d.merchant.name);
+  }
+
+  function presetById(id) { return (state.data.presets || []).filter(function (p) { return p.id === id; })[0]; }
+
+  /** Montant à débiter pour un frais sélectionné (acompte saisi valide, sinon montant complet). */
+  function payableFor(p) {
+    var sel = state.presetSel[p.id];
+    if (p.allowPartial && sel && sel.custom !== '' && sel.custom != null) {
+      var c = num(sel.custom);
+      if (c > 0) return c;
+    }
+    return num(p.amount);
+  }
+
+  /** Total courant (somme des frais cochés) — miroir client de la vérité serveur. */
+  function computeTotal() {
+    var d = state.data, total = 0;
+    if (d.amountType === 'fixed') return num(d.fixedAmount);
+    if (d.amountType === 'free') return num((document.getElementById('freeAmount') || {}).value);
+    if (d.amountType === 'preset') {
+      (d.presets || []).forEach(function (p) {
+        var sel = state.presetSel[p.id];
+        if (sel && sel.on) total += payableFor(p);
+      });
+    }
+    return total;
   }
 
   // --- 2) Rendu du parcours ---
@@ -54,16 +86,15 @@
     if (d.description) h += '<div class="idesc"></div>';
 
     // Montant
-    h += '<div class="lbl">Montant à payer</div>';
     if (d.amountType === 'fixed') {
+      h += '<div class="lbl">Montant à payer</div>';
       h += '<div class="big" id="amtFixed">' + money(d.fixedAmount || 0) + ' <small>' + d.currency + '</small></div>';
     } else if (d.amountType === 'preset') {
-      h += '<div class="presets" id="presets">';
-      (d.presets || []).forEach(function (p) {
-        h += '<div class="preset" data-id="' + p.id + '"><span>' + esc(p.label || '') + '</span><b>' + money(p.amount) + ' ' + d.currency + '</b></div>';
-      });
-      h += '</div>';
+      h += '<div class="lbl">' + (d.multiSelect ? 'Cochez les frais à régler' : 'Choisissez un montant') + '</div>';
+      h += '<div class="presets" id="presets"></div>';
+      h += '<div class="total" id="totalBar" style="display:none"></div>';
     } else { // free
+      h += '<div class="lbl">Montant à payer</div>';
       h += '<div class="field"><input type="number" id="freeAmount" inputmode="numeric" min="0" placeholder="Saisir le montant (' + d.currency + ')"></div>';
       var hint = [];
       if (d.minAmount) hint.push('min ' + money(d.minAmount));
@@ -73,15 +104,7 @@
 
     // Champs personnalisés
     (d.customFields || []).forEach(function (f) {
-      h += '<div class="field"><label>' + esc(f.label) + (f.required ? ' <span class="req">*</span>' : '') + '</label>';
-      if (f.type === 'select') {
-        h += '<select data-fid="' + f.id + '"><option value="">Choisir…</option>';
-        (f.options || []).forEach(function (o) { h += '<option value="' + esc(o) + '">' + esc(o) + '</option>'; });
-        h += '</select>';
-      } else {
-        h += '<input type="text" data-fid="' + f.id + '" placeholder="Saisir…">';
-      }
-      h += '</div>';
+      h += renderField(f);
     });
 
     // Téléphone (mobile money)
@@ -103,13 +126,12 @@
     bodyEl.querySelector('.iname').textContent = d.name || '';
     if (d.description) bodyEl.querySelector('.idesc').textContent = d.description;
 
-    // Sélecteur de presets
-    if (d.amountType === 'preset') {
-      bindClicks('#presets .preset', function (el) {
-        bodyEl.querySelectorAll('#presets .preset').forEach(function (x) { x.classList.remove('on'); });
-        el.classList.add('on'); state.presetId = Number(el.getAttribute('data-id'));
-      });
+    if (d.amountType === 'preset') renderPresets();
+    if (d.amountType === 'free') {
+      var fa = document.getElementById('freeAmount');
+      if (fa) fa.addEventListener('input', function () { /* pas de total pour le libre */ });
     }
+
     // Sélecteur de moyen — présélectionne le premier
     bindClicks('#methods .m', function (el) {
       bodyEl.querySelectorAll('#methods .m').forEach(function (x) { x.classList.remove('on'); });
@@ -119,6 +141,93 @@
     if (firstM) firstM.click();
 
     document.getElementById('payBtn').addEventListener('click', submit);
+  }
+
+  /** HTML d'un champ personnalisé (texte / liste / date / téléphone), gère la lecture seule. */
+  function renderField(f) {
+    var lbl = esc(f.label) + (f.required && !f.readonly ? ' <span class="req">*</span>' : '');
+    var h = '<div class="field"><label>' + lbl + '</label>';
+    if (f.readonly) {
+      h += '<input type="text" data-fid="' + f.id + '" data-ro="1" disabled placeholder="Auto-rempli">';
+    } else if (f.type === 'select') {
+      h += '<select data-fid="' + f.id + '"><option value="">Choisir…</option>';
+      (f.options || []).forEach(function (o) { h += '<option value="' + esc(o) + '">' + esc(o) + '</option>'; });
+      h += '</select>';
+    } else if (f.type === 'date') {
+      h += '<input type="date" data-fid="' + f.id + '">';
+    } else if (f.type === 'phone') {
+      h += '<input type="tel" data-fid="' + f.id + '" inputmode="tel" placeholder="+237 6XX XX XX XX">';
+    } else {
+      h += '<input type="text" data-fid="' + f.id + '" placeholder="Saisir…">';
+    }
+    return h + '</div>';
+  }
+
+  /** Rend la liste des frais (cases/radios) + les blocs d'acompte + la barre de total. */
+  function renderPresets() {
+    var d = state.data, wrap = document.getElementById('presets');
+    if (!wrap) return;
+    var html = '';
+    (d.presets || []).forEach(function (p) {
+      var sel = state.presetSel[p.id] || { on: false, custom: '' };
+      var on = sel.on;
+      html += '<div class="preset-wrap">';
+      html += '<div class="preset' + (on ? ' on' : '') + '" data-id="' + p.id + '">'
+        + '<span class="p-mark ' + (d.multiSelect ? 'box' : 'radio') + '">' + (on ? '✓' : '') + '</span>'
+        + '<span class="p-label">' + esc(p.label || 'Montant')
+        + (p.allowPartial ? '<em class="p-acompte">Acompte possible · min ' + money(p.minAmount || 0) + ' ' + d.currency + '</em>' : '')
+        + '</span>'
+        + '<b>' + money(p.amount) + ' ' + d.currency + '</b>'
+        + '</div>';
+      if (on && p.allowPartial) {
+        html += '<div class="partial">'
+          + '<label>Montant à verser (' + d.currency + ')</label>'
+          + '<input type="number" class="p-custom" data-id="' + p.id + '" inputmode="numeric" min="' + num(p.minAmount) + '" max="' + num(p.amount) + '"'
+          + ' value="' + (sel.custom != null ? esc(sel.custom) : '') + '" placeholder="' + money(p.amount) + '">'
+          + '<small>Min ' + money(p.minAmount || 0) + ' · complet ' + money(p.amount) + ' ' + d.currency + '</small>'
+          + '</div>';
+      }
+      html += '</div>';
+    });
+    wrap.innerHTML = html;
+
+    bindClicks('#presets .preset', function (el) {
+      var id = Number(el.getAttribute('data-id'));
+      togglePreset(id);
+    });
+    wrap.querySelectorAll('.p-custom').forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        var id = Number(inp.getAttribute('data-id'));
+        if (!state.presetSel[id]) state.presetSel[id] = { on: true, custom: '' };
+        state.presetSel[id].custom = inp.value;
+        updateTotal();
+      });
+    });
+    updateTotal();
+  }
+
+  function togglePreset(id) {
+    var d = state.data, cur = state.presetSel[id];
+    if (!d.multiSelect) {
+      // sélection unique : réinitialise puis coche celui-ci
+      state.presetSel = {};
+      state.presetSel[id] = { on: true, custom: '' };
+    } else {
+      if (cur && cur.on) { delete state.presetSel[id]; }
+      else { state.presetSel[id] = { on: true, custom: '' }; }
+    }
+    renderPresets();
+  }
+
+  function updateTotal() {
+    var d = state.data, bar = document.getElementById('totalBar');
+    if (!bar) return;
+    var count = Object.keys(state.presetSel).filter(function (k) { return state.presetSel[k].on; }).length;
+    if (count === 0) { bar.style.display = 'none'; return; }
+    var total = computeTotal();
+    bar.style.display = 'flex';
+    bar.innerHTML = '<span>Total' + (d.multiSelect ? ' · ' + count + ' frais' : '') + '</span>'
+      + '<b>' + money(total) + ' ' + d.currency + '</b>';
   }
 
   function syncPhoneVisibility() {
@@ -132,15 +241,31 @@
     err.style.display = 'none';
 
     var payload = { method: state.method, fields: {} };
+
     if (d.amountType === 'preset') {
-      if (!state.presetId) return showErr('Veuillez choisir un montant.');
-      payload.presetId = state.presetId;
+      var ids = Object.keys(state.presetSel).filter(function (k) { return state.presetSel[k].on; }).map(Number);
+      if (ids.length === 0) return showErr('Veuillez choisir un montant.');
+      payload.presetIds = ids;
+      var partial = {};
+      for (var i = 0; i < ids.length; i++) {
+        var p = presetById(ids[i]);
+        var sel = state.presetSel[ids[i]];
+        if (p && p.allowPartial && sel && sel.custom !== '' && sel.custom != null) {
+          var c = num(sel.custom);
+          if (c < num(p.minAmount)) return showErr('Acompte « ' + (p.label || 'frais') + ' » : minimum ' + money(p.minAmount) + ' ' + d.currency + '.');
+          if (c > num(p.amount)) return showErr('Acompte « ' + (p.label || 'frais') + ' » : ne peut dépasser ' + money(p.amount) + ' ' + d.currency + '.');
+          partial[String(ids[i])] = sel.custom;
+        }
+      }
+      if (Object.keys(partial).length) payload.presetAmounts = partial;
     } else if (d.amountType === 'free') {
       payload.amount = (document.getElementById('freeAmount').value || '').trim();
       if (!payload.amount) return showErr('Veuillez saisir un montant.');
     }
+
     var missing = null;
     (d.customFields || []).forEach(function (f) {
+      if (f.readonly) return; // auto-rempli, non saisi
       var el = bodyEl.querySelector('[data-fid="' + f.id + '"]');
       var v = el ? el.value.trim() : '';
       if (v) payload.fields[f.id] = v;

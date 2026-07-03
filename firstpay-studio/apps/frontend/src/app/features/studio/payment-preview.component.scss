@@ -14,6 +14,7 @@
 .presets { display: flex; flex-direction: column; gap: 8px; }
 .preset { display: flex; justify-content: space-between; align-items: center; padding: 11px 13px; border: 1px solid var(--border-strong); border-radius: 10px; font-size: 13px; }
 .preset b { font-weight: 700; }
+.preset .acompte { display: block; font-style: normal; font-size: 10.5px; font-weight: 600; color: var(--fp-red); margin-top: 2px; }
 .free-input { height: 44px; border: 1px solid var(--border-strong); border-radius: 10px; display: flex; align-items: center; padding: 0 13px; color: var(--text-3); font-weight: 600; }
 .hint { font-size: 11px; color: var(--text-3); margin-top: 6px; }
 
@@ -21,6 +22,7 @@
 .f-lbl { font-size: 12px; font-weight: 600; margin-bottom: 5px; }
 .req { color: var(--fp-red); }
 .f-box { height: 40px; border: 1px solid var(--border-strong); border-radius: 9px; display: flex; align-items: center; padding: 0 12px; color: var(--text-3); font-size: 13px; }
+.f-box.readonly { background: #f5f0ff; border-color: #d9ccf8; color: #7c3aed; font-weight: 600; }
 
 .methods { margin-top: 16px; }
 .m-lbl { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .05em; font-weight: 700; margin-bottom: 8px; }

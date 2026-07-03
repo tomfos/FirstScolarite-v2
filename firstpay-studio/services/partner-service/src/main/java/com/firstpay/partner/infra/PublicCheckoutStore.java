@@ -120,13 +120,14 @@ public class PublicCheckoutStore {
 
     /** Charge les champs personnalisés (ordre d'affichage) et les injecte dans la vue. */
     private Mono<Resolved> withFields(Resolved base) {
-        return db.sql("SELECT id, type, label, required, options FROM interface_fields WHERE interface_id = :id ORDER BY position")
+        return db.sql("SELECT id, type, label, required, readonly, options FROM interface_fields WHERE interface_id = :id ORDER BY position")
             .bind("id", UUID.fromString(base.interfaceId()))
             .map(r -> new InterfaceFieldDto(
                 r.get("id", UUID.class).toString(),
                 r.get("type", String.class),
                 r.get("label", String.class),
                 Boolean.TRUE.equals(r.get("required", Boolean.class)),
+                Boolean.TRUE.equals(r.get("readonly", Boolean.class)),
                 parseOptions(r.get("options", String.class))
             ))
             .all()
@@ -147,7 +148,9 @@ public class PublicCheckoutStore {
                 .map(m -> new PresetDto(
                     ((Number) m.getOrDefault("id", 1)).longValue(),
                     String.valueOf(m.getOrDefault("label", "")),
-                    String.valueOf(m.getOrDefault("amount", ""))))
+                    String.valueOf(m.getOrDefault("amount", "")),
+                    Boolean.TRUE.equals(m.get("allowPartial")),
+                    m.get("minAmount") != null ? String.valueOf(m.get("minAmount")) : ""))
                 .toList();
         } catch (Exception e) {
             return List.of();

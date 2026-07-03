@@ -8,7 +8,9 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -72,13 +74,22 @@ public class PublicCheckoutService {
                 return fixed;
             }
             case "preset" -> {
-                if (req == null || req.presetId() == null) throw badRequest("Veuillez choisir un montant proposé");
-                return it.presets().stream()
-                    .filter(p -> p.id() == req.presetId())
-                    .map(p -> parse(p.amount()))
-                    .filter(a -> a != null && a.signum() > 0)
-                    .findFirst()
-                    .orElseThrow(() -> badRequest("Montant proposé invalide"));
+                List<Long> selected = selectedPresetIds(it, req);
+                if (selected.isEmpty()) throw badRequest("Veuillez choisir un montant proposé");
+                Map<String, String> partials = req != null && req.presetAmounts() != null
+                    ? req.presetAmounts() : Map.of();
+                BigDecimal total = BigDecimal.ZERO;
+                for (Long pid : selected) {
+                    PresetDto preset = it.presets().stream()
+                        .filter(p -> p.id() == pid)
+                        .findFirst()
+                        .orElseThrow(() -> badRequest("Montant proposé invalide"));
+                    BigDecimal full = parse(preset.amount());
+                    if (full == null || full.signum() <= 0) throw badRequest("Montant proposé invalide");
+                    total = total.add(payableForPreset(preset, full, partials.get(String.valueOf(pid))));
+                }
+                if (total.signum() <= 0) throw badRequest("Montant invalide");
+                return total;
             }
             case "free" -> {
                 BigDecimal amount = parse(req != null ? req.amount() : null);
@@ -93,10 +104,51 @@ public class PublicCheckoutService {
         }
     }
 
+    /**
+     * Détermine les frais sélectionnés. En sélection multiple (panier), on lit {@code presetIds}
+     * (avec repli sur {@code presetId} pour un vieux client) ; sinon un seul frais.
+     */
+    private List<Long> selectedPresetIds(PublicCheckoutStore.Resolved it, PublicPayRequest req) {
+        if (req == null) return List.of();
+        if (it.multiSelect()) {
+            List<Long> ids = req.presetIds();
+            if (ids != null && !ids.isEmpty()) {
+                return ids.stream().filter(Objects::nonNull).distinct().toList();
+            }
+            return req.presetId() != null ? List.of(req.presetId()) : List.of();
+        }
+        if (req.presetId() != null) return List.of(req.presetId());
+        if (req.presetIds() != null && !req.presetIds().isEmpty()) return List.of(req.presetIds().get(0));
+        return List.of();
+    }
+
+    /**
+     * Montant à débiter pour un frais donné. Par défaut le montant complet ; si le frais autorise
+     * l'acompte et qu'un montant partiel valide est fourni, on l'accepte entre le minimum configuré
+     * et le montant complet (bornes vérifiées côté serveur — jamais sur la seule saisie navigateur).
+     */
+    private BigDecimal payableForPreset(PresetDto preset, BigDecimal full, String customAmount) {
+        if (!preset.allowPartial() || customAmount == null || customAmount.isBlank()) {
+            return full;
+        }
+        BigDecimal part = parse(customAmount);
+        if (part == null || part.signum() <= 0) throw badRequest("Montant d'acompte invalide");
+        BigDecimal min = parse(preset.minAmount());
+        if (min != null && part.compareTo(min) < 0) {
+            throw badRequest("Acompte inférieur au minimum autorisé pour « " + preset.label() + " »");
+        }
+        if (part.compareTo(full) > 0) {
+            throw badRequest("Acompte supérieur au montant du frais « " + preset.label() + " »");
+        }
+        return part;
+    }
+
     private void validateRequiredFields(PublicCheckoutStore.Resolved it, PublicPayRequest req) {
         Map<String, String> provided = req != null && req.fields() != null ? req.fields() : Map.of();
         for (InterfaceFieldDto f : it.customFields()) {
-            if (f.required()) {
+            // Un champ en lecture seule est auto-rempli (données importées), pas saisi par le payeur :
+            // l'exigence « requis » ne s'applique donc pas au formulaire public.
+            if (f.required() && !f.readonly()) {
                 String v = provided.get(f.id());
                 if (v == null || v.isBlank()) {
                     throw badRequest("Champ requis manquant : " + f.label());
@@ -127,6 +179,26 @@ public class PublicCheckoutService {
             if (req.payer() != null && !req.payer().isBlank()) md.put("payer", req.payer());
             if (req.phone() != null && !req.phone().isBlank()) md.put("phone", req.phone());
             if (req.fields() != null && !req.fields().isEmpty()) md.put("fields", req.fields());
+        }
+        // Détail des frais réglés (utile aux reçus / rapprochements), en particulier pour un panier multi-frais.
+        if ("preset".equals(it.amountType())) {
+            Map<String, String> partials = req != null && req.presetAmounts() != null ? req.presetAmounts() : Map.of();
+            var fees = new java.util.ArrayList<Map<String, Object>>();
+            for (Long pid : selectedPresetIds(it, req)) {
+                it.presets().stream().filter(p -> p.id() == pid).findFirst().ifPresent(preset -> {
+                    BigDecimal full = parse(preset.amount());
+                    if (full != null && full.signum() > 0) {
+                        BigDecimal payable = payableForPreset(preset, full, partials.get(String.valueOf(pid)));
+                        Map<String, Object> line = new HashMap<>();
+                        line.put("id", pid);
+                        line.put("label", preset.label());
+                        line.put("amount", payable.stripTrailingZeros().toPlainString());
+                        line.put("partial", payable.compareTo(full) < 0);
+                        fees.add(line);
+                    }
+                });
+            }
+            if (!fees.isEmpty()) md.put("fees", fees);
         }
         return md;
     }

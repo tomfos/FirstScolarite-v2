@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { PaymentInterface } from '../models/interface.model';
+import { CustomField, PaymentInterface } from '../models/interface.model';
 import { Transaction } from '../models/transaction.model';
 
 export interface ApiInterfaceDto {
@@ -21,12 +21,12 @@ export interface ApiInterfaceDto {
   minAmount?: string;
   maxAmount?: string;
   currency: string;
-  presets: { id: number; label: string; amount: string }[];
+  presets: { id: number; label: string; amount: string; allowPartial?: boolean; minAmount?: string }[];
   multiSelect: boolean;
   refType: string;
   refLabel?: string;
   refFormat?: string;
-  customFields: { id: string; type: string; label: string; required: boolean; options?: string[] }[];
+  customFields: { id: string; type: string; label: string; required: boolean; readonly?: boolean; options?: string[] }[];
   methods: Record<string, boolean>;
   qrCodes: Record<string, boolean>;
 }
@@ -191,9 +191,10 @@ function mapInterface(d: ApiInterfaceDto): PaymentInterface {
     refFormat: d.refFormat ?? 'any',
     customFields: (d.customFields ?? []).map((f) => ({
       id: f.id,
-      type: f.type as 'text' | 'select',
+      type: f.type as CustomField['type'],
       label: f.label,
       required: f.required,
+      readonly: !!f.readonly,
       options: f.options,
     })),
     methods: {

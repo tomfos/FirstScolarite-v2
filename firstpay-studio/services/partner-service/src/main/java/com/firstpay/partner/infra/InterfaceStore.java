@@ -108,14 +108,15 @@ public class InterfaceStore {
                     UUID fieldId = f.id() != null && !f.id().isBlank()
                         ? UUID.fromString(f.id()) : UUID.randomUUID();
                     return db.sql("""
-                            INSERT INTO interface_fields (id, interface_id, type, label, required, options, position)
-                            VALUES (:id, :iface, :type, :label, :req, :opts::jsonb, :pos)
+                            INSERT INTO interface_fields (id, interface_id, type, label, required, readonly, options, position)
+                            VALUES (:id, :iface, :type, :label, :req, :ro, :opts::jsonb, :pos)
                             """)
                         .bind("id", fieldId)
                         .bind("iface", interfaceId)
                         .bind("type", f.type())
                         .bind("label", f.label())
                         .bind("req", f.required())
+                        .bind("ro", f.readonly())
                         .bind("opts", f.options() != null ? toJson(f.options()) : null)
                         .bind("pos", tuple.getT1().intValue())
                         .fetch().rowsUpdated();
@@ -131,6 +132,7 @@ public class InterfaceStore {
                 r.get("type", String.class),
                 r.get("label", String.class),
                 Boolean.TRUE.equals(r.get("required", Boolean.class)),
+                Boolean.TRUE.equals(r.get("readonly", Boolean.class)),
                 parseOptions(r.get("options", String.class))
             ))
             .all()
@@ -180,7 +182,9 @@ public class InterfaceStore {
                 .map(m -> new PresetDto(
                     ((Number) m.getOrDefault("id", 1)).longValue(),
                     String.valueOf(m.getOrDefault("label", "")),
-                    String.valueOf(m.getOrDefault("amount", ""))))
+                    String.valueOf(m.getOrDefault("amount", "")),
+                    Boolean.TRUE.equals(m.get("allowPartial")),
+                    m.get("minAmount") != null ? String.valueOf(m.get("minAmount")) : ""))
                 .toList();
         } catch (Exception e) {
             return List.of();
