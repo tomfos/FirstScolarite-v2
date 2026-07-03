@@ -194,7 +194,7 @@ const METHODS: Method[] = ['orange', 'mtn', 'card', 'transfer'];
               <button class="primary" (click)="jump(current() + 1)" [disabled]="!validUpTo(current())">Suivant ›</button>
             } @else {
               <button class="ghost" (click)="onSave()">Enregistrer le brouillon</button>
-              <button class="primary" (click)="onPublish()">Publier l'interface</button>
+              <button class="primary" (click)="onPublish()">Aperçu et publier</button>
             }
           }
         </div>

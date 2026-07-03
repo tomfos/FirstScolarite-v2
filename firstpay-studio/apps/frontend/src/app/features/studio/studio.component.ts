@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { InterfaceListComponent } from './interface-list.component';
 import { EditorComponent } from './editor.component';
 import { PaymentPreviewComponent } from './payment-preview.component';
+import { PublishPreviewComponent } from './publish-preview.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge.component';
 import { ShareModalComponent } from '../../shared/components/share-modal.component';
 import { StudioStore } from './studio.store';
@@ -12,7 +13,7 @@ import { payHost } from '../../shared/pay-url';
 @Component({
   selector: 'fp-studio',
   standalone: true,
-  imports: [InterfaceListComponent, EditorComponent, PaymentPreviewComponent, StatusBadgeComponent, ShareModalComponent],
+  imports: [InterfaceListComponent, EditorComponent, PaymentPreviewComponent, PublishPreviewComponent, StatusBadgeComponent, ShareModalComponent],
   styleUrl: './studio.component.scss',
   template: `
     <div class="studio">
@@ -79,20 +80,9 @@ import { payHost } from '../../shared/pay-url';
           (close)="shareTarget.set(null)" />
       }
 
-      @if (publishPreview()) {
-        <div class="overlay" (click)="publishPreview.set(false)">
-          <div class="pub-modal" (click)="$event.stopPropagation()">
-            <div class="pub-head">Aperçu de publication</div>
-            <div class="pub-sub">Parcours payeur simulé — vérifiez avant de publier.</div>
-            @if (store.editing(); as d) {
-              <fp-payment-preview [data]="d" [partner]="partner()" />
-            }
-            <div class="pub-actions">
-              <button class="ghost" (click)="publishPreview.set(false)">Retour à l'éditeur</button>
-              <button class="primary" (click)="doPublish()">Confirmer la publication</button>
-            </div>
-          </div>
-        </div>
+      @if (publishPreview() && store.editing(); as d) {
+        <fp-publish-preview [data]="d" [partner]="partner()" [isPublishing]="publishing()"
+                            (close)="publishPreview.set(false)" (confirm)="doPublish()" />
       }
 
       @if (toast()) { <div class="toast">✓ {{ toast() }}</div> }
@@ -108,6 +98,7 @@ export class StudioComponent {
   readonly toast = signal<string | null>(null);
   readonly shareTarget = signal<PaymentInterface | null>(null);
   readonly publishPreview = signal(false);
+  readonly publishing = signal(false);
 
   fr(n: number) { return n.toLocaleString('fr-FR'); }
   onShare(id: string) {
@@ -119,10 +110,16 @@ export class StudioComponent {
   }
 
   doPublish() {
-    this.store.save('actif');
-    this.store.cancel();
-    this.publishPreview.set(false);
-    this.flash('Interface publiée — désormais accessible publiquement.');
+    if (this.publishing()) return;
+    this.publishing.set(true);
+    // Laisse l'état « Publication… » visible, puis persiste (status=actif) et ferme l'aperçu.
+    setTimeout(() => {
+      this.store.save('actif');
+      this.store.cancel();
+      this.publishing.set(false);
+      this.publishPreview.set(false);
+      this.flash('Interface publiée 🎉 — désormais accessible publiquement.');
+    }, 650);
   }
   confirmRemove(id: string) {
     const it = this.store.interfaces().find((i) => i.id === id);
