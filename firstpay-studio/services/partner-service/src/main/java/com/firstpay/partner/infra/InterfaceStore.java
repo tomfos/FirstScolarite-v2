@@ -49,7 +49,7 @@ public class InterfaceStore {
         String methodsJson = toJson(req.methods() != null ? req.methods() : defaultMethods());
         String qrJson = toJson(req.qrCodes() != null ? req.qrCodes() : Map.of());
 
-        return db.sql("""
+        DatabaseClient.GenericExecuteSpec spec = db.sql("""
                 INSERT INTO payment_interfaces (
                   id, tenant_id, name, description, sector, slug, custom_slug, status,
                   amount_type, fixed_amount, min_amount, max_amount, currency,
@@ -76,9 +76,6 @@ public class InterfaceStore {
             .bind("customSlug", req.customSlug() != null ? req.customSlug() : slug)
             .bind("status", req.status() != null ? req.status() : "brouillon")
             .bind("amountType", req.amountType() != null ? req.amountType() : "fixed")
-            .bind("fixed", parseNum(req.fixedAmount()))
-            .bind("min", parseNum(req.minAmount()))
-            .bind("max", parseNum(req.maxAmount()))
             .bind("currency", req.currency() != null ? req.currency() : "XAF")
             .bind("presets", presetsJson)
             .bind("multi", req.multiSelect())
@@ -86,7 +83,14 @@ public class InterfaceStore {
             .bind("refLabel", req.refLabel() != null ? req.refLabel() : "")
             .bind("refFormat", req.refFormat() != null ? req.refFormat() : "any")
             .bind("methods", methodsJson)
-            .bind("qr", qrJson)
+            .bind("qr", qrJson);
+
+        // Montants nullables : R2DBC exige bindNull(...) explicite quand la valeur est absente.
+        spec = bindAmount(spec, "fixed", req.fixedAmount());
+        spec = bindAmount(spec, "min", req.minAmount());
+        spec = bindAmount(spec, "max", req.maxAmount());
+
+        return spec
             .fetch().rowsUpdated()
             .then(replaceFields(id, req.customFields()))
             .then(findById(tenantId, id));
@@ -220,6 +224,13 @@ public class InterfaceStore {
     private static BigDecimal parseNum(String s) {
         if (s == null || s.isBlank()) return null;
         return new BigDecimal(s);
+    }
+
+    /** Lie un montant nullable : bind(valeur) si présent, sinon bindNull (R2DBC l'exige). */
+    private static DatabaseClient.GenericExecuteSpec bindAmount(
+            DatabaseClient.GenericExecuteSpec spec, String name, String value) {
+        BigDecimal n = parseNum(value);
+        return n != null ? spec.bind(name, n) : spec.bindNull(name, BigDecimal.class);
     }
 
     private static String numStr(BigDecimal n) {
