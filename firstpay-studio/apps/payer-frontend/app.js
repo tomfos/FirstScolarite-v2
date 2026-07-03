@@ -1,5 +1,5 @@
 /*
- * Page payeur publique FirstPay — app statique autonome (sans framework).
+ * Page payeur publique FirstStudioPay — app statique autonome (sans framework).
  * Parcours en 5 écrans, identique à l'aperçu du Studio :
  *   0 Identification · 1 Choix du montant · 2 Moyen de paiement · 3 Paiement · 4 Confirmation
  * Flux : résout /{shortCode}/{slug} via l'API publique, guide le payeur étape par étape,
@@ -76,10 +76,10 @@
   }
 
   function applyBrand(d) {
-    merchantEl.textContent = d.merchant.name || 'FirstPay';
+    merchantEl.textContent = d.merchant.name || 'FirstStudioPay';
     if (d.merchant.brandColor) document.documentElement.style.setProperty('--fp', d.merchant.brandColor);
     if (d.merchant.logoUrl) { logoEl.innerHTML = ''; var img = document.createElement('img'); img.src = d.merchant.logoUrl; img.alt = ''; logoEl.appendChild(img); }
-    else logoEl.textContent = (d.merchant.shortCode || 'FP').slice(0, 4).toUpperCase();
+    else logoEl.textContent = (d.merchant.shortCode || 'FSP').slice(0, 4).toUpperCase();
     document.title = 'Payer · ' + (d.name || d.merchant.name);
   }
 
@@ -506,7 +506,7 @@
 
   /* --------------------------- erreurs / utils --------------------------- */
   function renderError(title, sub) {
-    merchantEl.textContent = 'FirstPay';
+    merchantEl.textContent = 'FirstStudioPay';
     bodyEl.innerHTML = '<div class="center"><div class="ico ko">!</div><div class="rtitle">' + esc(title) + '</div><div class="rsub">' + esc(sub) + '</div></div>';
   }
   function qsa(sel) { return Array.prototype.slice.call(bodyEl.querySelectorAll(sel)); }

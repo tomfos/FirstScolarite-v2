@@ -121,7 +121,7 @@ const METHODS: Method[] = ['orange', 'mtn', 'card', 'transfer'];
                 <div class="cards2">
                   <button class="seg" [class.on]="d.refType === 'auto'" (click)="patch({ refType: 'auto' })">
                     <div class="seg-top">Référence automatique @if (d.refType === 'auto') { <span class="check">✓</span> }</div>
-                    <div class="seg-desc">FirstPay génère une référence unique par paiement.</div>
+                    <div class="seg-desc">FirstStudioPay génère une référence unique par paiement.</div>
                   </button>
                   <button class="seg" [class.on]="d.refType === 'custom'" (click)="patch({ refType: 'custom' })">
                     <div class="seg-top">Référence personnalisée @if (d.refType === 'custom') { <span class="check">✓</span> }</div>

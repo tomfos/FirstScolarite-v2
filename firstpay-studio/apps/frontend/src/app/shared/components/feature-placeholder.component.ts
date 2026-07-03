@@ -14,7 +14,7 @@ import { Component, Input } from '@angular/core';
         <div class="badge">{{ phase }}</div>
         <h1>{{ title }}</h1>
         <p>{{ desc }}</p>
-        <div class="note">Écran à implémenter — fidèle au prototype FirstPay Studio.</div>
+        <div class="note">Écran à implémenter — fidèle au prototype FirstStudioPay.</div>
       </div>
     </div>
   `,

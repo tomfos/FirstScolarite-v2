@@ -116,7 +116,7 @@ interface PvMethod { id: Method; name: string; brand: string; }
     <!-- ============ Contenu de l'écran payeur (partagé mobile/web) ============ -->
     <ng-template #phoneContent>
       <div class="ph-head">
-        <div class="ph-logo">FP</div>
+        <div class="ph-logo">FSP</div>
         <div class="ph-id">
           <div class="ph-partner">{{ partner().name }}</div>
           <div class="ph-name">{{ data().name || 'Interface' }}</div>
@@ -377,7 +377,7 @@ export class PublishPreviewComponent implements OnInit {
         : this.payKind() === 'qr' ? 'Un QR code est affiché ; le client le scanne avec son application pour valider.'
         : this.payKind() === 'card' ? 'Le client saisit ses informations carte sur une page sécurisée 3DS.'
         : 'Le client suit les instructions USSD ou valide sur son téléphone.' },
-      { title: "Confirmation", text: 'Le client reçoit une confirmation immédiate. Vous êtes notifié dans le tableau de bord FirstPay.' },
+      { title: "Confirmation", text: 'Le client reçoit une confirmation immédiate. Vous êtes notifié dans le tableau de bord FirstStudioPay.' },
     ];
     return items[this.step()];
   });
