@@ -36,7 +36,14 @@ import { payHost } from '../../shared/pay-url';
               </div>
               <div class="d-url mono">{{ payHost }}/{{ partner().shortCode }}/{{ it.slug }}</div>
             </div>
-            <button class="edit-btn" (click)="store.openEditor(it.id)">✎ Modifier l'interface</button>
+            <div class="detail-actions">
+              @if (it.status === 'brouillon') {
+                <button class="edit-btn" (click)="publishFrom(it.id)">🚀 Publier</button>
+              } @else {
+                <button class="share-btn" (click)="shareTarget.set(it)">🔗 Partager le lien</button>
+              }
+              <button class="ghost-btn" (click)="store.openEditor(it.id)">✎ Modifier</button>
+            </div>
           </div>
           <div class="detail-body">
             <div class="d-stats">
@@ -109,17 +116,34 @@ export class StudioComponent {
     return Object.entries(it.methods).filter(([, v]) => v).length + ' / 4';
   }
 
+  /** Publie une interface directement depuis son aperçu (brouillon → actif). */
+  publishFrom(id: string) {
+    this.store.openEditor(id);
+    this.publishPreview.set(true);
+  }
+
   doPublish() {
     if (this.publishing()) return;
+    const d = this.store.editing();
     this.publishing.set(true);
     // Laisse l'état « Publication… » visible, puis persiste (status=actif) et ferme l'aperçu.
     setTimeout(() => {
       this.store.save('actif');
-      this.store.cancel();
       this.publishing.set(false);
       this.publishPreview.set(false);
-      this.flash('Interface publiée 🎉 — désormais accessible publiquement.');
+      this.store.cancel();
+      // Ouvre aussitôt le partage : le partenaire voit et copie le lien public immédiatement.
+      if (d) {
+        const slug = d.customSlug?.trim() || this.slugify(d.name);
+        this.shareTarget.set({ ...d, slug, status: 'actif' });
+      }
+      this.flash('Interface publiée 🎉 — voici le lien public à partager.');
     }, 650);
+  }
+
+  private slugify(s: string) {
+    return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'interface';
   }
   confirmRemove(id: string) {
     const it = this.store.interfaces().find((i) => i.id === id);

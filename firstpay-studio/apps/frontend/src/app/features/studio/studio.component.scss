@@ -7,7 +7,10 @@
 .title-row { display: flex; align-items: center; gap: 10px; margin-top: 3px; }
 .d-name { font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
 .d-url { font-size: 12px; color: var(--text-3); margin-top: 4px; }
-.edit-btn { padding: 9px 14px; border-radius: 8px; border: none; background: var(--fp-red); color: #fff; font-weight: 600; font-size: 13px; box-shadow: 0 4px 10px -3px rgba(229,57,53,.45); }
+.edit-btn { padding: 9px 14px; border-radius: 8px; border: none; background: var(--fp-red); color: #fff; font-weight: 600; font-size: 13px; box-shadow: 0 4px 10px -3px rgba(229,57,53,.45); cursor: pointer; }
+.detail-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.share-btn { padding: 9px 14px; border-radius: 8px; border: none; background: var(--fp-red); color: #fff; font-weight: 600; font-size: 13px; box-shadow: 0 4px 10px -3px rgba(229,57,53,.45); cursor: pointer; }
+.ghost-btn { padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border-strong); background: #fff; color: var(--text-2); font-weight: 600; font-size: 13px; cursor: pointer; }
 
 .detail-body { flex: 1; overflow: auto; padding: 28px; position: relative; z-index: 1; }
 .d-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
