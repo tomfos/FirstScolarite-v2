@@ -114,7 +114,50 @@
 
     bodyEl.innerHTML = h;
     bindStep();
+    animateView();
   }
+
+  /* --------------------------- animations GSAP --------------------------- */
+  // Toutes les animations sont optionnelles : si GSAP n'est pas chargé, la page
+  // fonctionne normalement (dégradation gracieuse).
+  function animateView() {
+    var g = window.gsap;
+    if (!g) return;
+
+    // Confirmation finale — flourish de succès / échec
+    if (state.result) {
+      var ok = state.result.status === 'SUCCESS';
+      var tl = g.timeline();
+      tl.from('.ico', { scale: 0, opacity: 0, duration: 0.55, ease: 'back.out(1.8)' })
+        .from('.rtitle', { y: 14, opacity: 0, duration: 0.32, ease: 'power2.out' }, '-=0.18')
+        .from('.rsub', { y: 12, opacity: 0, duration: 0.32, ease: 'power2.out' }, '-=0.2')
+        .from('.ref', { y: 10, opacity: 0, duration: 0.3, ease: 'power2.out' }, '-=0.16');
+      if (bodyEl.querySelector('.ghost')) tl.from('.ghost', { opacity: 0, duration: 0.3 }, '-=0.1');
+      if (ok) {
+        // Onde de succès (ripple) via box-shadow — aucun DOM ajouté
+        g.fromTo('.ico.ok',
+          { boxShadow: '0 0 0 0 rgba(30,158,84,0.55)' },
+          { boxShadow: '0 0 0 26px rgba(30,158,84,0)', duration: 1.2, ease: 'power2.out', delay: 0.25 });
+        g.to('.ico.ok', { scale: 1.06, duration: 0.18, yoyo: true, repeat: 1, delay: 0.55, ease: 'power1.inOut' });
+      } else if (state.result.status === 'FAILED') {
+        g.fromTo('.ico.ko', { x: -7 }, { x: 0, duration: 0.6, ease: 'elastic.out(1,0.35)', delay: 0.2 });
+      }
+      return;
+    }
+
+    // Écran d'attente
+    if (state.paying) {
+      g.from('.center', { opacity: 0, y: 12, duration: 0.4, ease: 'power2.out' });
+      return;
+    }
+
+    // Étapes de saisie : entrée du contenu + pop de l'étape active
+    g.from('.stepbody > *', { y: 16, opacity: 0, duration: 0.38, stagger: 0.06, ease: 'power2.out' });
+    g.from('.stepfoot', { y: 10, opacity: 0, duration: 0.3, ease: 'power2.out', delay: 0.12 });
+    g.from('.steps .stp.on .stp-dot', { scale: 0.4, duration: 0.4, ease: 'back.out(2.4)' });
+  }
+
+  function pulse(el) { if (window.gsap && el) window.gsap.fromTo(el, { scale: 0.96 }, { scale: 1, duration: 0.28, ease: 'back.out(2.2)' }); }
 
   function renderSteps() {
     var cur = state.result ? 4 : state.step;
@@ -326,9 +369,14 @@
         state.presetSel[id].custom = inp.value; updateTotal();
       });
     });
-    // Moyens
+    // Moyens : surbrillance en place + petit pop (pas de re-render complet)
     qsa('#methods .mrow').forEach(function (el) {
-      el.addEventListener('click', function () { state.method = el.getAttribute('data-m'); render(); });
+      el.addEventListener('click', function () {
+        state.method = el.getAttribute('data-m');
+        qsa('#methods .mrow').forEach(function (x) { x.classList.remove('on'); });
+        el.classList.add('on');
+        pulse(el);
+      });
     });
     // Téléphone (étape paiement)
     var ph = document.getElementById('phone');
@@ -341,6 +389,8 @@
     else { if (cur && cur.on) delete state.presetSel[id]; else state.presetSel[id] = { on: true, custom: '' }; }
     // re-render partiel de la liste + total (préserve le contexte de l'étape)
     var wrap = document.getElementById('presets'); if (wrap) { wrap.innerHTML = presetsHtml(); bindPresets(); }
+    var sel = wrap && wrap.querySelector('.preset[data-id="' + id + '"]');
+    if (sel && state.presetSel[id]) pulse(sel);
     updateTotal();
   }
   function bindPresets() {
@@ -356,8 +406,10 @@
   function updateTotal() {
     var bar = document.getElementById('totalBar'); if (!bar) return;
     var t = computeTotal();
+    var wasHidden = bar.style.display === 'none';
     bar.style.display = t > 0 ? 'flex' : 'none';
     bar.innerHTML = totalHtml();
+    if (t > 0 && window.gsap) window.gsap.fromTo(bar, { scale: wasHidden ? 0.9 : 0.98, opacity: wasHidden ? 0 : 1 }, { scale: 1, opacity: 1, duration: 0.3, ease: 'back.out(1.8)' });
     var nb = document.getElementById('nextBtn');
     if (nb && state.step === 3) nb.textContent = 'Payer ' + money(t) + ' ' + state.data.currency;
   }
