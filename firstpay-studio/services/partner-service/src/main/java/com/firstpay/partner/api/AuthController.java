@@ -38,7 +38,8 @@ public class AuthController {
 
     public record LoginRequest(String email, String password) {}
     public record LoginResponse(String token, String email, String name, String role,
-                                String tenantId, String partner, String tokenType) {}
+                                String tenantId, String partner, String code, String shortCode,
+                                String sector, String tokenType) {}
 
     @PostMapping("/login")
     public Mono<ResponseEntity<LoginResponse>> login(@RequestBody LoginRequest req) {
@@ -50,7 +51,8 @@ public class AuthController {
             .map(u -> {
                 String token = jwt.issue(u.email(), u.tenantId(), u.role(), u.partner());
                 return ResponseEntity.ok(new LoginResponse(
-                    token, u.email(), u.name(), u.role(), u.tenantId(), u.partner(), "Bearer"));
+                    token, u.email(), u.name(), u.role(), u.tenantId(), u.partner(),
+                    u.code(), u.shortCode(), u.sector(), "Bearer"));
             })
             .defaultIfEmpty(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }

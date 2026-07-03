@@ -169,7 +169,8 @@ public class PartnerStore {
     public Mono<LoginRow> findUserForLogin(String email) {
         return db.sql("""
                 SELECT u.id, u.name, u.email, u.role, u.status, u.password_hash,
-                       t.id AS tenant_id, t.name AS partner_name
+                       t.id AS tenant_id, t.name AS partner_name, t.code AS tenant_code,
+                       t.config->>'shortCode' AS short_code, t.config->>'sector' AS sector
                 FROM partner_users u
                 JOIN tenants t ON t.id = u.tenant_id
                 WHERE lower(u.email) = lower(:email) AND u.status = 'active'
@@ -183,11 +184,15 @@ public class PartnerStore {
                 r.get("role", String.class),
                 r.get("tenant_id", UUID.class).toString(),
                 r.get("partner_name", String.class),
+                r.get("tenant_code", String.class),
+                r.get("short_code", String.class),
+                r.get("sector", String.class),
                 r.get("password_hash", String.class)
             )).one();
     }
 
-    public record LoginRow(String id, String name, String email, String role, String tenantId, String partner, String passwordHash) {}
+    public record LoginRow(String id, String name, String email, String role, String tenantId,
+                           String partner, String code, String shortCode, String sector, String passwordHash) {}
 
     /** Résout un tenant à partir du hash SHA-256 de son API-key (appel interne de la gateway). */
     public Mono<TenantResolution> resolveByApiKeyHash(String apiKeyHash) {

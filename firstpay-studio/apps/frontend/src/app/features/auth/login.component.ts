@@ -95,7 +95,12 @@ export class LoginComponent {
       this.auth.login(account, res.token);
       if (res.tenantId) this.tenant.setTenantId(res.tenantId);
       if (cat.side === 'partner' && res.partner) {
-        this.tenant.setPartner({ name: res.partner, code: '', shortCode: '', sector: '' });
+        this.tenant.setPartner({
+          name: res.partner,
+          code: res.code ?? '',
+          shortCode: res.shortCode ?? '',
+          sector: res.sector ?? '',
+        });
       }
       this.router.navigate(['/', cat.home]);
     });

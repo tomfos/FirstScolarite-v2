@@ -10,6 +10,9 @@ export interface LoginResponse {
   role: string;
   tenantId: string;
   partner: string;
+  code: string;
+  shortCode: string;
+  sector: string;
   tokenType: string;
 }
 
