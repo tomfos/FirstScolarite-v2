@@ -53,6 +53,7 @@ server:
 
 firstpay:
   partner-service-uri: ${PARTNER_SVC_URI:http://localhost:8080}
+  internal-token: ${INTERNAL_TOKEN:}
   payment:
     webhook-base: ${PAYMENT_WEBHOOK_BASE:http://localhost:18080/webhooks/trustpayway}
     reconcile-interval-ms: ${PAYMENT_RECONCILE_MS:30000}

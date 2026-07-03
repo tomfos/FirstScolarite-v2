@@ -179,6 +179,7 @@ services:
       KAFKA_BROKERS: kafka:9092
       REDIS_URL: redis://redis:6379
       PARTNER_SVC_URI: http://partner-service:8080
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:-firstpay-dev-internal}
       PAYMENT_WEBHOOK_BASE: ${PAYMENT_WEBHOOK_BASE:-http://localhost:18080/webhooks/trustpayway}
       PAYMENT_SIMULATION_ENABLED: ${PAYMENT_SIMULATION_ENABLED:-true}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
