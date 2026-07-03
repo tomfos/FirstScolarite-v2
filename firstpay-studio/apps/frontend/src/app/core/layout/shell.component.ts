@@ -130,6 +130,7 @@ export class ShellComponent implements OnInit {
 
   logout() {
     this.auth.logout();
+    this.tenant.clear();
     this.router.navigate(['/login']);
   }
 }
