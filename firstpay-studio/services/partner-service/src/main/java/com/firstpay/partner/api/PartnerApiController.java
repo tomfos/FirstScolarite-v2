@@ -4,9 +4,11 @@ import com.firstpay.partner.api.dto.Dtos.*;
 import com.firstpay.partner.infra.EmailService;
 import com.firstpay.partner.infra.InterfaceStore;
 import com.firstpay.partner.infra.PartnerStore;
+import com.firstpay.partner.infra.PublicBaseUrl;
 import com.firstpay.security.JwtService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
@@ -43,7 +45,8 @@ public class PartnerApiController {
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<CreatePartnerResponse> createPartner(
             @RequestHeader(value = "X-User-Role", required = false) String role,
-            @RequestBody CreatePartnerRequest req) {
+            @RequestBody CreatePartnerRequest req,
+            ServerHttpRequest request) {
         if (!"bank_admin".equals(role)) {
             return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
                 "Seul l'administrateur banque peut créer un partenaire"));
@@ -51,10 +54,12 @@ public class PartnerApiController {
         if (req == null || req.name() == null || req.name().isBlank()) {
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nom du partenaire requis"));
         }
+        // Le lien du portail dans l'email suit le domaine réellement utilisé (SaaS multi-domaines).
+        String baseUrl = PublicBaseUrl.fromRequest(request);
         return partners.createPartner(req)
             // Envoi best-effort de l'email de connexion (lien + identifiants temporaires).
             .flatMap(res -> email.sendConnectionEmail(
-                    res.adminEmail(), req.adminName(), res.partner().name(), res.tempPassword())
+                    res.adminEmail(), req.adminName(), res.partner().name(), res.tempPassword(), baseUrl)
                 .thenReturn(res));
     }
 

@@ -3,6 +3,7 @@ package com.firstpay.partner.infra;
 import com.firstpay.partner.api.dto.Dtos.AggregatorConfigDto;
 import com.firstpay.partner.api.dto.Dtos.PlatformSettingsDto;
 import io.r2dbc.spi.Readable;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Mono;
@@ -11,12 +12,17 @@ import reactor.core.publisher.Mono;
 @Repository
 public class PlatformStore {
 
-    private static final String DEFAULT_APP_URL = "http://localhost:14200";
     private static final String DEFAULT_AGG_URL = "https://mobilewallet.trustpayway.com";
 
     private final DatabaseClient db;
+    /** Défaut de l'URL appli (option 3, env APP_PUBLIC_BASE_URL) au lieu d'un localhost codé en dur. */
+    private final String defaultAppUrl;
 
-    public PlatformStore(DatabaseClient db) { this.db = db; }
+    public PlatformStore(DatabaseClient db,
+                         @Value("${app.public-base-url:http://localhost:14200}") String defaultAppUrl) {
+        this.db = db;
+        this.defaultAppUrl = defaultAppUrl;
+    }
 
     /** Lecture complète (mots de passe inclus) — usage interne (email, payment-service). */
     public Mono<PlatformSettingsDto> getRaw() {
@@ -42,7 +48,7 @@ public class PlatformStore {
             nz(s.aggBaseUrl(), DEFAULT_AGG_URL),
             nz(s.aggAppId()),
             nz(s.aggSecret()),
-            nz(s.appBaseUrl(), DEFAULT_APP_URL)));
+            nz(s.appBaseUrl(), defaultAppUrl)));
     }
 
     /**
@@ -66,7 +72,7 @@ public class PlatformStore {
                 .bind("user", nz(in.smtpUsername())).bind("pwd", nz(pwd))
                 .bind("from", nz(in.smtpFromEmail())).bind("fromName", nz(in.smtpFromName()))
                 .bind("tls", in.smtpUseTls()).bind("enabled", in.smtpEnabled())
-                .bind("url", nz(in.appBaseUrl(), DEFAULT_APP_URL))
+                .bind("url", nz(in.appBaseUrl(), defaultAppUrl))
                 .bind("aggEnabled", in.aggEnabled())
                 .bind("aggUrl", nz(in.aggBaseUrl(), DEFAULT_AGG_URL))
                 .bind("aggAppId", nz(in.aggAppId()))
@@ -75,9 +81,9 @@ public class PlatformStore {
         });
     }
 
-    private static PlatformSettingsDto emptyRaw() {
+    private PlatformSettingsDto emptyRaw() {
         return new PlatformSettingsDto(null, 587, null, null, null,
-            "FirstPay — Afriland First Bank", true, false, DEFAULT_APP_URL, false,
+            "FirstPay — Afriland First Bank", true, false, defaultAppUrl, false,
             false, DEFAULT_AGG_URL, null, null, false);
     }
 

@@ -28,6 +28,12 @@ firstpay:
   internal-token: ${INTERNAL_TOKEN:}
   # Appel server-to-server pour l'initiation de paiement depuis la page payeur publique.
   transaction-service-uri: ${TRANSACTION_SVC_URI:http://localhost:8080}
+
+# URL publique de l'appli pour les liens dans les emails.
+# Option 2 : surchargée dynamiquement par le host de la requête quand disponible (SaaS multi-domaines).
+# Option 3 : ce défaut sert de filet de sécurité — à définir en prod (ex. https://esign.afbdei.com).
+app:
+  public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:14200}
 management:
   endpoints:
     web:

@@ -3,6 +3,7 @@ package com.firstpay.partner.infra;
 import com.firstpay.partner.api.dto.Dtos.PlatformSettingsDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.stereotype.Service;
@@ -22,12 +23,22 @@ public class EmailService {
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
     private final PlatformStore platform;
+    /** Défaut applicatif (option 3, env APP_PUBLIC_BASE_URL) — filet de sécurité, jamais localhost en prod. */
+    private final String defaultBaseUrl;
 
-    public EmailService(PlatformStore platform) { this.platform = platform; }
+    public EmailService(PlatformStore platform,
+                        @Value("${app.public-base-url:http://localhost:14200}") String defaultBaseUrl) {
+        this.platform = platform;
+        this.defaultBaseUrl = defaultBaseUrl;
+    }
 
-    /** Email de connexion à un nouveau partenaire : lien de l'appli + identifiants temporaires. */
+    /**
+     * Email de connexion à un nouveau partenaire : lien de l'appli + identifiants temporaires.
+     *
+     * @param requestBaseUrl URL publique dérivée de la requête courante (option 2), ou {@code null}.
+     */
     public Mono<Boolean> sendConnectionEmail(String toEmail, String toName, String partnerName,
-                                             String tempPassword) {
+                                             String tempPassword, String requestBaseUrl) {
         if (toEmail == null || toEmail.isBlank()) return Mono.just(false);
         return platform.getRaw().flatMap(cfg -> {
             if (!cfg.smtpEnabled() || cfg.smtpHost() == null || cfg.smtpHost().isBlank()) {
@@ -35,6 +46,7 @@ public class EmailService {
                 return Mono.just(false);
             }
             String subject = "Votre accès au portail FirstPay — " + partnerName;
+            String portalUrl = resolvePortalUrl(requestBaseUrl, cfg.appBaseUrl());
             String body = """
                 Bonjour %s,
 
@@ -50,11 +62,36 @@ public class EmailService {
 
                 — L'équipe FirstPay, Afriland First Bank
                 """.formatted(toName == null ? "" : toName, partnerName,
-                              cfg.appBaseUrl(), toEmail, tempPassword);
+                              portalUrl, toEmail, tempPassword);
             return Mono.fromCallable(() -> { send(cfg, toEmail, subject, body); return true; })
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(e -> { log.warn("Échec d'envoi email à {} : {}", toEmail, e.getMessage()); return Mono.just(false); });
         });
+    }
+
+    /**
+     * URL du portail insérée dans l'email de connexion. Priorité :
+     * <ol>
+     *   <li>host de la requête courante (option 2, SaaS multi-domaines) ;</li>
+     *   <li>valeur configurée par l'admin dans « Paramètres plateforme » (si explicite) ;</li>
+     *   <li>défaut applicatif {@code app.public-base-url} (option 3, env) — filet de sécurité.</li>
+     * </ol>
+     */
+    private String resolvePortalUrl(String requestBaseUrl, String configuredUrl) {
+        if (!isBlank(requestBaseUrl)) return stripTrailingSlash(requestBaseUrl);
+        if (isConfigured(configuredUrl)) return stripTrailingSlash(configuredUrl);
+        return stripTrailingSlash(defaultBaseUrl);
+    }
+
+    /** Vrai si l'admin a saisi une URL réelle (non vide et pas le placeholder localhost de dev). */
+    private static boolean isConfigured(String url) {
+        return !isBlank(url) && !url.startsWith("http://localhost");
+    }
+
+    private static boolean isBlank(String s) { return s == null || s.isBlank(); }
+
+    private static String stripTrailingSlash(String s) {
+        return s.endsWith("/") ? s.substring(0, s.length() - 1) : s;
     }
 
     /** Résultat d'un test SMTP : succès + message d'erreur réel en cas d'échec (affiché à l'admin). */

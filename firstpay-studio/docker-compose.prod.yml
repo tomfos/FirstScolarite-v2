@@ -55,6 +55,8 @@ services:
       DB_PASS: ${DB_PASS}
       JWT_SECRET: ${JWT_SECRET}
       INTERNAL_TOKEN: ${INTERNAL_TOKEN:-}
+      # Filet de sécurité pour les liens email si le host de la requête est indisponible.
+      APP_PUBLIC_BASE_URL: ${APP_PUBLIC_BASE_URL:-${FRONTEND_ORIGIN:-https://esign.afbdei.com}}
       TRACING_SAMPLE_RATE: ${TRACING_SAMPLE_RATE:-0.05}
     restart: unless-stopped
 
