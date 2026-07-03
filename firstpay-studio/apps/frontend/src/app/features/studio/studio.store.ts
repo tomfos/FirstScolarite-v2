@@ -6,6 +6,7 @@ import {
 } from '../../core/models/interface.model';
 import { Transaction } from '../../core/models/transaction.model';
 import { PartnerApiService } from '../../core/api/partner-api.service';
+import { TenantContextService } from '../../core/tenant/tenant-context.service';
 
 interface StudioState {
   interfaces: PaymentInterface[];
@@ -38,7 +39,7 @@ export const StudioStore = signalStore(
     activeCount: computed(() => store.interfaces().filter((i) => i.status === 'actif').length),
     draftCount: computed(() => store.interfaces().filter((i) => i.status === 'brouillon').length),
   })),
-  withMethods((store, api = inject(PartnerApiService)) => ({
+  withMethods((store, api = inject(PartnerApiService), tenant = inject(TenantContextService)) => ({
     loadFromApi() {
       patchState(store, { loading: true, error: null });
       forkJoin({ ifaces: api.fetchInterfaces(), txs: api.fetchTransactions() }).pipe(
@@ -72,7 +73,9 @@ export const StudioStore = signalStore(
     },
 
     openNew() {
-      patchState(store, { selectedId: null, editing: NEW_INTERFACE() });
+      // Le secteur n'est plus choisi à la création : il est hérité du profil partenaire.
+      const sector = tenant.partner()?.sector || 'Autre';
+      patchState(store, { selectedId: null, editing: NEW_INTERFACE(sector) });
     },
 
     patchEditing(patch: Partial<PaymentInterface>) {

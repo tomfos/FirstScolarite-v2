@@ -54,8 +54,8 @@ import { payHost } from '../../shared/pay-url';
             </div>
             <div class="d-grid">
               <div class="d-panel">
-                <div class="d-panel-head">Aperçu de la page de paiement</div>
-                <div class="d-panel-body"><fp-payment-preview [data]="it" [partner]="partner()" /></div>
+                <div class="d-panel-head">Aperçu de la page de paiement <span class="live-tag">LIVE</span></div>
+                <div class="d-panel-body stage"><fp-payment-preview [data]="it" [partner]="partner()" /></div>
               </div>
               <div class="d-panel">
                 <div class="d-panel-head">Configuration</div>
@@ -63,8 +63,20 @@ import { payHost } from '../../shared/pay-url';
                   <div class="cfg-row"><span>Type de montant</span><b>{{ amountLabel(it.amountType) }}</b></div>
                   <div class="cfg-row"><span>Devise</span><b>{{ it.currency }}</b></div>
                   <div class="cfg-row"><span>Référence</span><b>{{ it.refType === 'auto' ? 'Automatique' : it.refLabel || 'Personnalisée' }}</b></div>
-                  <div class="cfg-row"><span>Champs</span><b>{{ it.customFields.length }}</b></div>
+                  <div class="cfg-row"><span>Champs collectés</span><b>{{ it.customFields.length }}</b></div>
                   <div class="cfg-row"><span>Moyens actifs</span><b>{{ activeMethods(it) }}</b></div>
+                  <div class="cfg-row"><span>Secteur</span><b class="muted-v">{{ it.sector || 'Hérité du partenaire' }}</b></div>
+                </div>
+              </div>
+              <div class="d-panel">
+                <div class="d-panel-head">Lien & partage</div>
+                <div class="d-panel-body share-pane">
+                  <div class="copy-box">
+                    <span class="u mono">{{ payHost }}/{{ partner().shortCode }}/{{ it.slug }}</span>
+                    <button class="cp" (click)="copyUrl(it)">{{ copied() ? '✓' : 'Copier' }}</button>
+                  </div>
+                  <button class="share-cta" (click)="shareTarget.set(it)">🔗 Partager & QR code</button>
+                  <div class="share-hint">Diffusez ce lien par WhatsApp, SMS ou email, ou imprimez le QR code — il reste valide tant que l'interface est publiée.</div>
                 </div>
               </div>
             </div>
@@ -106,8 +118,15 @@ export class StudioComponent {
   readonly shareTarget = signal<PaymentInterface | null>(null);
   readonly publishPreview = signal(false);
   readonly publishing = signal(false);
+  readonly copied = signal(false);
 
   fr(n: number) { return n.toLocaleString('fr-FR'); }
+  copyUrl(it: PaymentInterface) {
+    const url = `https://${this.payHost}/${this.partner().shortCode}/${it.slug}`;
+    navigator.clipboard?.writeText(url);
+    this.copied.set(true);
+    setTimeout(() => this.copied.set(false), 1600);
+  }
   onShare(id: string) {
     this.shareTarget.set(this.store.interfaces().find((i) => i.id === id) ?? null);
   }

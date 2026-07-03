@@ -14,19 +14,38 @@
 
 .detail-body { flex: 1; overflow: auto; padding: 28px; position: relative; z-index: 1; }
 .d-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+@media (max-width: 860px) { .d-stats { grid-template-columns: repeat(2, 1fr); } }
 .d-stat { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: var(--shadow-sm); }
 .ds-lbl { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
 .ds-val { font-size: 22px; font-weight: 700; letter-spacing: -.02em; margin-top: 4px; }
 .ds-sub { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
 
-.d-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+/* 3 zones qui remplissent l'écran large ; se replient sur écrans étroits */
+.d-grid { display: grid; grid-template-columns: minmax(360px, 1.15fr) minmax(0, 1fr) minmax(0, .92fr); gap: 16px; align-items: start; }
+@media (max-width: 1280px) { .d-grid { grid-template-columns: minmax(340px, 1fr) 1fr; } .d-grid > .d-panel:last-child { grid-column: 1 / -1; } }
+@media (max-width: 860px) { .d-grid { grid-template-columns: 1fr; } }
 .d-panel { background: #fff; border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); overflow: hidden; }
-.d-panel-head { padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 700; }
+.d-panel-head { padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 12.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); display: flex; align-items: center; justify-content: space-between; }
+.live-tag { font-size: 10px; font-weight: 700; color: var(--fp-red); background: var(--fp-red-50); padding: 2px 8px; border-radius: 99px; letter-spacing: .02em; }
 .d-panel-body { padding: 18px; }
+/* Scène centrée pour l'émulateur — plus de téléphone perdu dans le vide */
+.d-panel-body.stage { display: grid; place-items: center; min-height: 540px; padding: 20px;
+  background: radial-gradient(ellipse 460px 380px at 50% 28%, rgba(229,57,53,.06), transparent 70%), linear-gradient(180deg, #FAFBFC, #fff); }
 .cfg { display: flex; flex-direction: column; gap: 10px; }
-.cfg-row { display: flex; justify-content: space-between; font-size: 13px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.cfg-row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
 .cfg-row:last-child { border-bottom: none; padding-bottom: 0; }
 .cfg-row span { color: var(--text-2); }
+.cfg-row b { text-align: right; }
+.cfg-row .muted-v { color: var(--text-3); font-weight: 600; }
+
+/* Panneau Lien & partage */
+.share-pane { display: flex; flex-direction: column; gap: 14px; }
+.copy-box { display: flex; align-items: stretch; border: 1px solid var(--border-strong); border-radius: 10px; overflow: hidden; }
+.copy-box .u { flex: 1; min-width: 0; padding: 11px 13px; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.copy-box .cp { padding: 0 16px; background: var(--text); color: #fff; border: none; font-weight: 700; font-size: 12.5px; cursor: pointer; }
+.share-cta { height: 44px; border: none; border-radius: 10px; background: var(--fp-red); color: #fff; font-weight: 700; font-size: 13.5px; cursor: pointer; box-shadow: 0 6px 14px -4px rgba(229,57,53,.5); }
+.share-cta:hover { background: var(--fp-red-dark); }
+.share-hint { font-size: 12px; color: var(--text-3); line-height: 1.5; }
 
 .empty-editor { flex: 1; display: grid; place-items: center; background: var(--bg); text-align: center; }
 .ee-title { font-size: 18px; font-weight: 700; }

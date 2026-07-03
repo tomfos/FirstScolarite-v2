@@ -1,4 +1,5 @@
-import { Component, computed, input } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, computed, inject, input } from '@angular/core';
+import { gsap } from 'gsap';
 import { CustomField, PaymentInterface, METHOD_LABELS, Method } from '../../core/models/interface.model';
 import { Partner } from '../../core/tenant/tenant-context.service';
 
@@ -73,9 +74,24 @@ import { Partner } from '../../core/tenant/tenant-context.service';
     </div>
   `,
 })
-export class PaymentPreviewComponent {
+export class PaymentPreviewComponent implements AfterViewInit {
+  private readonly host = inject(ElementRef<HTMLElement>);
   readonly data = input.required<PaymentInterface>();
   readonly partner = input.required<Partner>();
+
+  ngAfterViewInit() {
+    const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) return;
+    const el: HTMLElement = this.host.nativeElement;
+    const q = (s: string) => Array.from(el.querySelectorAll(s)) as HTMLElement[];
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+    tl.from(el.querySelectorAll('.brandbar'), { y: -10, opacity: 0, duration: 0.4 })
+      .from(q('.body > *'), { y: 16, opacity: 0, duration: 0.5, stagger: 0.07 }, '-=0.15');
+    // Effet dynamique : le bouton « Payer » respire légèrement
+    gsap.to(el.querySelectorAll('.pay-btn'), {
+      scale: 1.015, duration: 1.6, ease: 'sine.inOut', yoyo: true, repeat: -1, delay: 1,
+    });
+  }
 
   readonly validPresets = computed(() => this.data().presets.filter((p) => p.amount));
   readonly activeMethods = computed(() =>

@@ -10,13 +10,20 @@ import {
 } from '../../core/models/interface.model';
 
 const STEPS = [
-  { title: 'Informations générales', short: 'Infos', desc: 'Nom & description' },
-  { title: 'Configuration du paiement', short: 'Paiement', desc: 'Montant & référence' },
-  { title: 'Champs du formulaire', short: 'Formulaire', desc: 'Données collectées' },
-  { title: 'Moyens & publication', short: 'Publication', desc: 'Canaux & URL' },
+  {
+    title: 'Interface & montant', short: 'Interface', desc: 'Nom, lien & montant',
+    help: "Donnez un nom clair à votre collecte, choisissez son lien public, puis définissez le montant que le payeur réglera.",
+  },
+  {
+    title: 'Référence & formulaire', short: 'Formulaire', desc: 'Données collectées',
+    help: "Choisissez la référence attachée à chaque paiement et les informations à demander au payeur.",
+  },
+  {
+    title: 'Moyens & publication', short: 'Publication', desc: 'Canaux & URL',
+    help: "Activez les moyens de paiement proposés et vérifiez l'URL publique avant de publier.",
+  },
 ];
 
-const SECTORS = ['Fintech', 'Éducation', 'ONG / Associatif', 'Commerce', 'Santé', 'Transport', 'Autre'];
 const METHODS: Method[] = ['orange', 'mtn', 'card', 'transfer'];
 
 @Component({
@@ -43,23 +50,20 @@ const METHODS: Method[] = ['orange', 'mtn', 'card', 'transfer'];
           <!-- Form -->
           <div class="form-pane">
             <div class="form-title">{{ steps[current()].title }}</div>
+            <div class="form-help">{{ steps[current()].help }}</div>
 
             @switch (current()) {
               @case (0) {
+                <div class="section-lbl">Informations</div>
                 <label class="fld"><span>Nom de l'interface <i>*</i></span>
                   <input [ngModel]="d.name" (ngModelChange)="patch({ name: $event })" placeholder="Ex : Frais de scolarité 2025-2026"></label>
                 <label class="fld"><span>Description</span>
-                  <textarea [ngModel]="d.description" (ngModelChange)="patch({ description: $event })" rows="3" placeholder="Expliquez à vos payeurs l'objet de cette collecte."></textarea></label>
-                <label class="fld"><span>Secteur</span>
-                  <select [ngModel]="d.sector" (ngModelChange)="patch({ sector: $event })">
-                    @for (s of sectors; track s) { <option [value]="s">{{ s }}</option> }
-                  </select></label>
-                <label class="fld"><span>Lien personnalisé</span>
+                  <textarea [ngModel]="d.description" (ngModelChange)="patch({ description: $event })" rows="2" placeholder="Expliquez à vos payeurs l'objet de cette collecte."></textarea></label>
+                <label class="fld"><span>Lien public personnalisé</span>
                   <div class="slug"><span class="slug-pre mono">{{ payHost }}/{{ partner().shortCode }}/</span>
                     <input class="mono" [ngModel]="d.customSlug" (ngModelChange)="patch({ customSlug: $event })" placeholder="mon-lien"></div></label>
-              }
 
-              @case (1) {
+                <div class="section-lbl">Montant à payer <i>*</i></div>
                 <div class="cards3">
                   @for (a of amountTypes; track a.value) {
                     <button class="seg" [class.on]="d.amountType === a.value" (click)="patch({ amountType: a.value })">
@@ -112,7 +116,8 @@ const METHODS: Method[] = ['orange', 'mtn', 'card', 'transfer'];
                 }
               }
 
-              @case (2) {
+              @case (1) {
+                <div class="section-lbl">Référence de paiement</div>
                 <div class="cards2">
                   <button class="seg" [class.on]="d.refType === 'auto'" (click)="patch({ refType: 'auto' })">
                     <div class="seg-top">Référence automatique @if (d.refType === 'auto') { <span class="check">✓</span> }</div>
@@ -158,8 +163,8 @@ const METHODS: Method[] = ['orange', 'mtn', 'card', 'transfer'];
                 } @empty { <div class="muted">Aucun champ — la collecte demandera seulement le montant.</div> }
               }
 
-              @case (3) {
-                <div class="presets-head"><span>Moyens de paiement</span></div>
+              @case (2) {
+                <div class="section-lbl">Moyens de paiement <i>*</i></div>
                 @for (m of methods; track m) {
                   <label class="method-row">
                     <span class="m-name">{{ methodLabel(m) }}</span>
@@ -217,7 +222,6 @@ export class EditorComponent {
   readonly payHost = payHost();
   readonly current = signal(0);
   readonly steps = STEPS;
-  readonly sectors = SECTORS;
   readonly methods = METHODS;
   readonly amountTypes: { value: AmountType; label: string; desc: string }[] = [
     { value: 'fixed', label: 'Montant fixe', desc: 'Un seul montant imposé.' },
@@ -265,24 +269,24 @@ export class EditorComponent {
   validUpTo(step: number): boolean {
     if (step < 0) return true;
     const d = this.data()!;
-    if (step === 0) return d.name.trim().length > 0;
-    if (step === 1) {
+    if (step === 0) {
+      if (!d.name.trim()) return false;
       if (d.amountType === 'fixed') return +d.fixedAmount > 0;
       if (d.amountType === 'preset') return d.presets.some((p) => +p.amount > 0);
       return +d.minAmount > 0 && +d.maxAmount >= +d.minAmount;
     }
-    if (step === 2) {
+    if (step === 1) {
       if (d.refType === 'custom' && !d.refLabel?.trim()) return false;
       return d.customFields.every((f) => !f.required || f.label.trim().length > 0);
     }
-    if (step === 3) return Object.values(d.methods).some(Boolean);
+    if (step === 2) return Object.values(d.methods).some(Boolean);
     return true;
   }
   jump(i: number) { if (i <= this.current() || this.validUpTo(i - 1)) this.current.set(Math.max(0, Math.min(i, this.steps.length - 1))); }
 
   onSave() { this.store.save(); this.saved.emit(); }
   onPublish() {
-    if (!this.validUpTo(3)) return;
+    if (!this.validUpTo(2)) return;
     this.publish.emit();
   }
 }

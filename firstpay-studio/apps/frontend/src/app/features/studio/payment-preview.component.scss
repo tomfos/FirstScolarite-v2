@@ -1,5 +1,6 @@
 .frame { display: flex; justify-content: center; padding: 8px; }
-.phone { width: 320px; background: #fff; border: 1px solid var(--border); border-radius: 22px; overflow: hidden; box-shadow: var(--shadow-lg); }
+.phone { width: 320px; background: #fff; border: 1px solid var(--border); border-radius: 22px; overflow: hidden; box-shadow: var(--shadow-lg); animation: fp-float 6s ease-in-out infinite; will-change: transform; }
+@keyframes fp-float { 0%, 100% { transform: translateY(0) rotate(-.3deg); } 50% { transform: translateY(-9px) rotate(.3deg); } }
 .brandbar { background: linear-gradient(135deg, #E53935, #C62828); color: #fff; padding: 18px 18px 16px; display: flex; align-items: center; gap: 12px; }
 .brand-logo { width: 36px; height: 36px; border-radius: 9px; background: rgba(255,255,255,.18); display: grid; place-items: center; font-weight: 800; font-size: 13px; }
 .brand-name { font-weight: 700; font-size: 14px; }
@@ -31,5 +32,12 @@
 .m-pill.orange { border-color: #FF7900; color: #B85600; background: #FFF4EA; }
 .m-pill.mtn { border-color: #FFCB05; color: #8A6D00; background: #FFFBE8; }
 
-.pay-btn { width: 100%; margin-top: 18px; height: 46px; border: none; border-radius: 11px; background: var(--fp-red); color: #fff; font-weight: 700; font-size: 14px; box-shadow: 0 6px 14px -4px rgba(229,57,53,.5); }
+.pay-btn { position: relative; overflow: hidden; width: 100%; margin-top: 18px; height: 46px; border: none; border-radius: 11px; background: var(--fp-red); color: #fff; font-weight: 700; font-size: 14px; box-shadow: 0 6px 14px -4px rgba(229,57,53,.5); }
+.pay-btn::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%); transform: translateX(-120%); animation: fp-sheen 3.4s ease-in-out infinite; }
+@keyframes fp-sheen { 0%, 55% { transform: translateX(-120%); } 80%, 100% { transform: translateX(120%); } }
 .secured { text-align: center; font-size: 11px; color: var(--text-3); margin-top: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .phone { animation: none; }
+  .pay-btn::after { animation: none; }
+}
