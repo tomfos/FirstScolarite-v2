@@ -22,31 +22,35 @@ Vérifier : `k6 version`
 
 | Élément | Détail |
 |---------|--------|
-| `BASE_URL` | URL **joignable depuis votre PC** vers l'API Gateway. Le gateway écoute sur `127.0.0.1:18080` **côté serveur** — depuis l'extérieur il faut l'URL publique (ex. `https://esign.afbdei.com`) **ou** un tunnel SSH (voir §5). |
+| `BASE_URL` | **Défaut = `https://esign.afbdei.com`** (endpoint public : nginx proxyfie `/api/` vers le gateway, TLS valide). Rien à configurer — laissez le défaut. |
 | `API_KEY` | Clé API d'un **tenant actif**. Son SHA-256 doit correspondre à `tenants.api_key_hash`. Les clés démo (`demo-soft-key`) sont désactivées → `401`. |
 
 > Pas de clé sous la main ? Créez un **tenant de test jetable** côté serveur puis supprimez-le après (voir §4).
 
 ## 3. Lancer
 
+`BASE_URL` pointe par défaut sur `https://esign.afbdei.com` — vous n'avez qu'à
+fournir `API_KEY`.
+
 ```bash
 # Fumée : 5 req/s pendant 30 s — valide connectivité + auth
-k6 run -e BASE_URL=https://votre-gateway -e API_KEY=xxxx -e SCENARIO=smoke transactions.js
+k6 run -e API_KEY=xxxx -e SCENARIO=smoke transactions.js
 
 # Charge soutenue — pic réaliste pour 1M users/jour (~100-200 tx/s)
-k6 run -e BASE_URL=https://votre-gateway -e API_KEY=xxxx \
-       -e SCENARIO=load -e TARGET_TPS=150 -e RAMP=30 -e HOLD=150 transactions.js
+k6 run -e API_KEY=xxxx -e SCENARIO=load -e TARGET_TPS=150 -e RAMP=30 -e HOLD=150 transactions.js
 
 # Burst & recovery : nominal -> pic ×5 -> retour nominal
-k6 run -e BASE_URL=https://votre-gateway -e API_KEY=xxxx \
-       -e SCENARIO=burst -e TARGET_TPS=100 -e BURST_FACTOR=5 transactions.js
+k6 run -e API_KEY=xxxx -e SCENARIO=burst -e TARGET_TPS=100 -e BURST_FACTOR=5 transactions.js
+
+# Viser un autre environnement (ex. stack locale via tunnel) : surchargez BASE_URL
+k6 run -e BASE_URL=http://localhost:18080 -e API_KEY=xxxx -e SCENARIO=smoke transactions.js
 ```
 
 ### Paramètres (`-e CLE=valeur`)
 
 | Variable | Défaut | Rôle |
 |----------|--------|------|
-| `BASE_URL` | `http://localhost:18080` | URL de l'API Gateway |
+| `BASE_URL` | `https://esign.afbdei.com` | URL de l'API Gateway (endpoint public) |
 | `API_KEY` | *(vide)* | clé API d'un tenant actif — **obligatoire** |
 | `SCENARIO` | `load` | `smoke` \| `load` \| `burst` |
 | `TARGET_TPS` | `150` | débit cible (req/s) |
@@ -80,9 +84,10 @@ DELETE FROM tenants WHERE code='LOADTEST';
 > `digest()` nécessite l'extension `pgcrypto`. Sinon, calculez le hash côté shell :
 > `printf '%s' 'loadtest-key-2026' | sha256sum` et collez la valeur dans `api_key_hash`.
 
-## 5. (Option) Tunnel SSH si le gateway n'est pas exposé publiquement
+## 5. (Option) Tunnel SSH pour viser la stack locale du serveur
 
-Le gateway est bindé sur `127.0.0.1:18080` du serveur. Depuis votre PC :
+Non nécessaire avec le défaut public. Utile seulement pour tester le gateway en
+direct (`127.0.0.1:18080` du serveur, sans passer par nginx). Depuis votre PC :
 
 ```bash
 ssh -N -L 18080:127.0.0.1:18080 utilisateur@serveur

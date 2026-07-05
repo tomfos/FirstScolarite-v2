@@ -9,7 +9,7 @@
 //   k6 run -e BASE_URL=https://votre-gateway -e API_KEY=xxxx tests/load-tests/k6/transactions.js
 //
 // --- Paramètres (variables d'env -e KEY=val) --------------------------------
-//   BASE_URL     URL de l'API Gateway              (défaut http://localhost:18080)
+//   BASE_URL     URL de l'API Gateway              (défaut https://esign.afbdei.com)
 //   API_KEY      clé API d'un tenant actif         (OBLIGATOIRE en pratique)
 //   SCENARIO     smoke | load | burst              (défaut load)
 //   TARGET_TPS   débit cible req/s (load/burst)    (défaut 150)
@@ -28,7 +28,8 @@ import { check } from 'k6';
 import { Counter, Rate } from 'k6/metrics';
 
 // ----- paramètres -----------------------------------------------------------
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:18080';
+// Défaut = endpoint public (nginx https://esign.afbdei.com/api/ -> gateway).
+const BASE_URL = __ENV.BASE_URL || 'https://esign.afbdei.com';
 const API_KEY = __ENV.API_KEY || '';
 const SCENARIO = (__ENV.SCENARIO || 'load').toLowerCase();
 const TARGET_TPS = parseInt(__ENV.TARGET_TPS || '150', 10);
