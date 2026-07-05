@@ -134,7 +134,8 @@ public class EmailService {
             form.smtpHost(), form.smtpPort(), form.smtpUsername(), pwd,
             form.smtpFromEmail(), form.smtpFromName(), form.smtpUseTls(), form.smtpEnabled(),
             form.appBaseUrl(), false,
-            form.aggEnabled(), form.aggBaseUrl(), form.aggAppId(), form.aggSecret(), false);
+            form.aggEnabled(), form.aggBaseUrl(), form.aggAppId(), form.aggSecret(), false,
+            form.aggMode(), form.aggSandboxBaseUrl(), form.aggSandboxAppId(), form.aggSandboxSecret(), false);
     }
 
     /** Message le plus informatif de la chaîne d'exceptions (ex. réponse 535 d'Office 365). */

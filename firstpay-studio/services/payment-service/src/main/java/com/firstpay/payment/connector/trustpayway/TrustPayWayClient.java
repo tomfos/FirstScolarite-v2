@@ -24,7 +24,7 @@ import java.util.UUID;
 @Service
 public class TrustPayWayClient {
 
-    private static final String TOKEN_KEY = "tpw:access_token";
+    private static final String TOKEN_KEY_PREFIX = "tpw:access_token:";
     private static final Duration TOKEN_TTL = Duration.ofMinutes(115);
 
     private final WebClient http;
@@ -92,9 +92,12 @@ public class TrustPayWayClient {
     }
 
     private Mono<String> token(AggregatorConfig cfg) {
-        return redis.opsForValue().get(TOKEN_KEY)
+        // Clé scopée par applicationId : sandbox et production ont des identifiants distincts,
+        // donc un token mis en cache pour l'un n'est jamais réutilisé pour l'autre après bascule.
+        String key = TOKEN_KEY_PREFIX + cfg.appId();
+        return redis.opsForValue().get(key)
             .switchIfEmpty(fetchToken(cfg).flatMap(t -> redis.opsForValue()
-                .set(TOKEN_KEY, t, TOKEN_TTL).thenReturn(t)));
+                .set(key, t, TOKEN_TTL).thenReturn(t)));
     }
 
     private Mono<String> fetchToken(AggregatorConfig cfg) {

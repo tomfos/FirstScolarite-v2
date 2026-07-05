@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
 public class PlatformStore {
 
     private static final String DEFAULT_AGG_URL = "https://mobilewallet.trustpayway.com";
+    private static final String DEFAULT_AGG_MODE = "production";
 
     private final DatabaseClient db;
     /** Défaut de l'URL appli (option 3, env APP_PUBLIC_BASE_URL) au lieu d'un localhost codé en dur. */
@@ -31,24 +32,37 @@ public class PlatformStore {
             .defaultIfEmpty(emptyRaw());
     }
 
-    /** Lecture pour l'UI : secrets masqués (passwordSet / aggSecretSet). */
+    /** Lecture pour l'UI : secrets masqués (passwordSet / aggSecretSet / aggSandboxSecretSet). */
     public Mono<PlatformSettingsDto> getMasked() {
         return getRaw().map(s -> new PlatformSettingsDto(
             s.smtpHost(), s.smtpPort(), s.smtpUsername(), null,
             s.smtpFromEmail(), s.smtpFromName(), s.smtpUseTls(), s.smtpEnabled(),
             s.appBaseUrl(), s.smtpPassword() != null && !s.smtpPassword().isBlank(),
             s.aggEnabled(), s.aggBaseUrl(), s.aggAppId(), null,
-            s.aggSecret() != null && !s.aggSecret().isBlank()));
+            s.aggSecret() != null && !s.aggSecret().isBlank(),
+            nz(s.aggMode(), DEFAULT_AGG_MODE),
+            nz(s.aggSandboxBaseUrl(), DEFAULT_AGG_URL), s.aggSandboxAppId(), null,
+            s.aggSandboxSecret() != null && !s.aggSandboxSecret().isBlank()));
     }
 
-    /** Config agrégateur pour le payment-service (secret en clair). */
+    /**
+     * Config agrégateur pour le payment-service (secret en clair) : résout le jeu d'identifiants
+     * (production vs sandbox) selon {@code agg_mode}.
+     */
     public Mono<AggregatorConfigDto> getAggregatorConfig() {
-        return getRaw().map(s -> new AggregatorConfigDto(
-            s.aggEnabled(),
-            nz(s.aggBaseUrl(), DEFAULT_AGG_URL),
-            nz(s.aggAppId()),
-            nz(s.aggSecret()),
-            nz(s.appBaseUrl(), defaultAppUrl)));
+        return getRaw().map(s -> {
+            boolean sandbox = "sandbox".equalsIgnoreCase(s.aggMode());
+            String baseUrl = sandbox ? s.aggSandboxBaseUrl() : s.aggBaseUrl();
+            String appId   = sandbox ? s.aggSandboxAppId()   : s.aggAppId();
+            String secret  = sandbox ? s.aggSandboxSecret()  : s.aggSecret();
+            return new AggregatorConfigDto(
+                s.aggEnabled(),
+                nz(baseUrl, DEFAULT_AGG_URL),
+                nz(appId),
+                nz(secret),
+                nz(s.appBaseUrl(), defaultAppUrl),
+                sandbox ? "sandbox" : DEFAULT_AGG_MODE);
+        });
     }
 
     /**
@@ -59,13 +73,16 @@ public class PlatformStore {
         return getRaw().flatMap(cur -> {
             String pwd = blank(in.smtpPassword()) ? cur.smtpPassword() : in.smtpPassword();
             String aggSecret = blank(in.aggSecret()) ? cur.aggSecret() : in.aggSecret();
+            String aggSandboxSecret = blank(in.aggSandboxSecret()) ? cur.aggSandboxSecret() : in.aggSandboxSecret();
             return db.sql("""
                     UPDATE platform_settings SET
                       smtp_host = :host, smtp_port = :port, smtp_username = :user, smtp_password = :pwd,
                       smtp_from_email = :from, smtp_from_name = :fromName, smtp_use_tls = :tls,
                       smtp_enabled = :enabled, app_base_url = :url,
                       agg_enabled = :aggEnabled, agg_base_url = :aggUrl, agg_app_id = :aggAppId,
-                      agg_secret = :aggSecret, updated_at = now()
+                      agg_secret = :aggSecret, agg_mode = :aggMode,
+                      agg_sandbox_base_url = :aggSbxUrl, agg_sandbox_app_id = :aggSbxAppId,
+                      agg_sandbox_secret = :aggSbxSecret, updated_at = now()
                     WHERE id = 1
                     """)
                 .bind("host", nz(in.smtpHost())).bind("port", in.smtpPort())
@@ -77,6 +94,10 @@ public class PlatformStore {
                 .bind("aggUrl", nz(in.aggBaseUrl(), DEFAULT_AGG_URL))
                 .bind("aggAppId", nz(in.aggAppId()))
                 .bind("aggSecret", nz(aggSecret))
+                .bind("aggMode", "sandbox".equalsIgnoreCase(in.aggMode()) ? "sandbox" : DEFAULT_AGG_MODE)
+                .bind("aggSbxUrl", nz(in.aggSandboxBaseUrl(), DEFAULT_AGG_URL))
+                .bind("aggSbxAppId", nz(in.aggSandboxAppId()))
+                .bind("aggSbxSecret", nz(aggSandboxSecret))
                 .fetch().rowsUpdated().then(getMasked());
         });
     }
@@ -84,7 +105,8 @@ public class PlatformStore {
     private PlatformSettingsDto emptyRaw() {
         return new PlatformSettingsDto(null, 587, null, null, null,
             "FirstPay — Afriland First Bank", true, false, defaultAppUrl, false,
-            false, DEFAULT_AGG_URL, null, null, false);
+            false, DEFAULT_AGG_URL, null, null, false,
+            DEFAULT_AGG_MODE, DEFAULT_AGG_URL, null, null, false);
     }
 
     private static boolean blank(String s) { return s == null || s.isBlank(); }
@@ -107,6 +129,11 @@ public class PlatformStore {
             r.get("agg_base_url", String.class),
             r.get("agg_app_id", String.class),
             r.get("agg_secret", String.class),
+            false,
+            r.get("agg_mode", String.class),
+            r.get("agg_sandbox_base_url", String.class),
+            r.get("agg_sandbox_app_id", String.class),
+            r.get("agg_sandbox_secret", String.class),
             false);
     }
 }

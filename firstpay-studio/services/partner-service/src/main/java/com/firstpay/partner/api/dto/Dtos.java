@@ -17,18 +17,20 @@ public final class Dtos {
     public record PresetDto(long id, String label, String amount, boolean allowPartial, String minAmount) {}
 
     public record InterfaceDto(
-        String id, String tenantId, String name, String description, String sector,
+        String id, String tenantId, String name, String description, String sector, String country,
         String slug, String customSlug, String status, long tx, long collected,
         String amountType, String fixedAmount, String minAmount, String maxAmount, String currency,
         List<PresetDto> presets, boolean multiSelect, String refType, String refLabel, String refFormat,
-        List<InterfaceFieldDto> customFields, Map<String, Boolean> methods, Map<String, Boolean> qrCodes
+        List<InterfaceFieldDto> customFields, Map<String, Boolean> methods, Map<String, Boolean> qrCodes,
+        String establishment
     ) {}
 
     public record SaveInterfaceRequest(
-        String id, String name, String description, String sector, String customSlug, String status,
+        String id, String name, String description, String sector, String country, String customSlug, String status,
         String amountType, String fixedAmount, String minAmount, String maxAmount, String currency,
         List<PresetDto> presets, boolean multiSelect, String refType, String refLabel, String refFormat,
-        List<InterfaceFieldDto> customFields, Map<String, Boolean> methods, Map<String, Boolean> qrCodes
+        List<InterfaceFieldDto> customFields, Map<String, Boolean> methods, Map<String, Boolean> qrCodes,
+        String establishment
     ) {}
 
     public record PartnerDto(String id, String code, String shortCode, String name, String sector, String status, int interfaceCount) {}
@@ -43,16 +45,26 @@ public final class Dtos {
     /** Réponse de création : le partenaire + l'API-key + les identifiants temporaires (affichés une fois). */
     public record CreatePartnerResponse(PartnerDto partner, String apiKey, String adminEmail, String tempPassword) {}
 
-    /** Configuration SMTP + agrégateur TrustPayWay (secrets masqués en lecture). */
+    /**
+     * Configuration SMTP + agrégateur TrustPayWay (secrets masqués en lecture).
+     * <p>Les champs {@code agg*} (hors sandbox) constituent le jeu d'identifiants PRODUCTION ;
+     * les champs {@code aggSandbox*} le jeu SANDBOX. {@code aggMode} (« sandbox » | « production »)
+     * choisit lequel est actif ; {@code aggEnabled} reste l'interrupteur global des paiements réels.
+     */
     public record PlatformSettingsDto(
         String smtpHost, int smtpPort, String smtpUsername, String smtpPassword,
         String smtpFromEmail, String smtpFromName, boolean smtpUseTls, boolean smtpEnabled,
         String appBaseUrl, boolean passwordSet,
-        boolean aggEnabled, String aggBaseUrl, String aggAppId, String aggSecret, boolean aggSecretSet) {}
+        boolean aggEnabled, String aggBaseUrl, String aggAppId, String aggSecret, boolean aggSecretSet,
+        String aggMode,
+        String aggSandboxBaseUrl, String aggSandboxAppId, String aggSandboxSecret, boolean aggSandboxSecretSet) {}
 
-    /** Config agrégateur (usage interne payment-service, secret inclus). */
+    /**
+     * Config agrégateur résolue selon le mode actif (usage interne payment-service, secret inclus).
+     * {@code mode} est propagé pour scoper le cache de jeton entre sandbox et production.
+     */
     public record AggregatorConfigDto(
-        boolean enabled, String baseUrl, String appId, String secret, String webhookBaseUrl) {}
+        boolean enabled, String baseUrl, String appId, String secret, String webhookBaseUrl, String mode) {}
 
     public record UserDto(String id, String name, String email, String role, String status) {}
 
@@ -66,7 +78,7 @@ public final class Dtos {
      * N'est renvoyée que pour une interface `status = actif` d'un tenant `ACTIVE`.
      */
     public record PublicCheckoutDto(
-        String interfaceId, String name, String description, String sector, String slug,
+        String interfaceId, String name, String description, String sector, String country, String slug,
         String amountType, String fixedAmount, String minAmount, String maxAmount, String currency,
         List<PresetDto> presets, boolean multiSelect, String refType, String refLabel, String refFormat,
         List<InterfaceFieldDto> customFields, Map<String, Boolean> methods, PublicMerchantDto merchant
@@ -93,4 +105,27 @@ public final class Dtos {
     ) {}
 
     public record SettingsDto(String tenantId, String logoUrl, String logoName, String brandColor, Map<String, Object> notifications) {}
+
+    /* ------------------------ Répertoire étudiants (matricule) ------------------------ */
+
+    /**
+     * Résultat d'une recherche PUBLIQUE par matricule sur la page payeur.
+     * `found` = le matricule existe dans le répertoire de l'établissement ; `fields` mappe
+     * l'ID d'un champ personnalisé -> valeur importée (nom, prénom, classe…), prêt à être
+     * injecté dans le formulaire pour vérification par l'étudiant.
+     */
+    public record StudentLookupDto(boolean found, Map<String, String> fields) {}
+
+    /**
+     * Requête d'import du répertoire (admin/partenaire). `rows` est la liste des lignes du
+     * fichier importé : chaque ligne mappe l'en-tête de colonne -> valeur. Une ligne DOIT
+     * comporter un « matricule ». `replace` remplace intégralement le répertoire existant.
+     */
+    public record RosterImportRequest(List<Map<String, String>> rows, boolean replace) {}
+
+    /** Bilan d'un import : lignes insérées/mises à jour, lignes ignorées (sans matricule), total après import. */
+    public record RosterImportResult(int imported, int skipped, long total) {}
+
+    /** Aperçu du répertoire d'un partenaire (compteur + établissements distincts). */
+    public record RosterSummaryDto(long total, List<String> establishments) {}
 }

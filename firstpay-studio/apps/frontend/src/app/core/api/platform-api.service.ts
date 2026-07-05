@@ -15,10 +15,15 @@ export interface PlatformSettings {
   appBaseUrl: string;
   passwordSet?: boolean;
   aggEnabled: boolean;
+  aggMode: 'sandbox' | 'production';
   aggBaseUrl: string;
   aggAppId: string;
   aggSecret: string;
   aggSecretSet?: boolean;
+  aggSandboxBaseUrl: string;
+  aggSandboxAppId: string;
+  aggSandboxSecret: string;
+  aggSandboxSecretSet?: boolean;
 }
 
 /** Paramètres plateforme (config SMTP) — réservés à l'admin banque. */

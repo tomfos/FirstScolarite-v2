@@ -4,10 +4,12 @@ import { PlatformApiService, PlatformSettings } from '../../core/api/platform-ap
 
 const EMPTY: PlatformSettings = {
   smtpHost: '', smtpPort: 587, smtpUsername: '', smtpPassword: '',
-  smtpFromEmail: '', smtpFromName: 'FirstStudioPay — Afriland First Bank',
+  smtpFromEmail: '', smtpFromName: 'Cash collect First — Afriland First Bank',
   smtpUseTls: true, smtpEnabled: false, appBaseUrl: 'http://localhost:14200', passwordSet: false,
-  aggEnabled: false, aggBaseUrl: 'https://mobilewallet.trustpayway.com', aggAppId: '', aggSecret: '',
-  aggSecretSet: false,
+  aggEnabled: false, aggMode: 'production',
+  aggBaseUrl: 'https://mobilewallet.trustpayway.com', aggAppId: '', aggSecret: '', aggSecretSet: false,
+  aggSandboxBaseUrl: 'https://mobilewallet.trustpayway.com', aggSandboxAppId: '', aggSandboxSecret: '',
+  aggSandboxSecretSet: false,
 };
 
 @Component({
@@ -18,7 +20,7 @@ const EMPTY: PlatformSettings = {
   template: `
     <div class="page">
       <div class="head">
-        <div class="eyebrow">Plateforme FirstStudioPay · Administration</div>
+        <div class="eyebrow">Plateforme Cash collect First · Administration</div>
         <div class="title">Paramètres plateforme</div>
         <div class="subtitle">Configuration SMTP et agrégateur de paiement mobile (TrustPayWay) pour les encaissements MTN / Orange Money.</div>
       </div>
@@ -75,15 +77,39 @@ const EMPTY: PlatformSettings = {
             </label>
           </div>
 
-          <div class="grid">
-            <label class="fld c2"><span>URL de l'API <i>*</i></span>
-              <input [ngModel]="s().aggBaseUrl" (ngModelChange)="patch({ aggBaseUrl: $event })" placeholder="https://mobilewallet.trustpayway.com"></label>
+          <div class="env-switch" role="tablist">
+            <button type="button" role="tab" [class.active]="s().aggMode === 'sandbox'"
+              (click)="patch({ aggMode: 'sandbox' })">🧪 Sandbox (test)</button>
+            <button type="button" role="tab" [class.active]="s().aggMode === 'production'"
+              (click)="patch({ aggMode: 'production' })">🚀 Production</button>
+          </div>
+          <div class="env-hint">
+            Environnement actif : <b>{{ s().aggMode === 'sandbox' ? 'Sandbox (test)' : 'Production' }}</b>.
+            Les deux jeux d'identifiants sont conservés — basculez à tout moment sans les ressaisir.
+          </div>
 
-            <label class="fld c2"><span>Application ID (app_id) <i>*</i></span>
-              <input [ngModel]="s().aggAppId" (ngModelChange)="patch({ aggAppId: $event })" placeholder="b59325d6-21c2-4669-b7c8-8490a6673df7"></label>
+          <div class="env-block" [class.active]="s().aggMode === 'sandbox'">
+            <div class="env-block-title">🧪 Identifiants Sandbox @if (s().aggMode === 'sandbox') { <span class="badge">actif</span> }</div>
+            <div class="grid">
+              <label class="fld c2"><span>URL de l'API</span>
+                <input [ngModel]="s().aggSandboxBaseUrl" (ngModelChange)="patch({ aggSandboxBaseUrl: $event })" placeholder="https://mobilewallet.trustpayway.com"></label>
+              <label class="fld c2"><span>Application ID (app_id)</span>
+                <input [ngModel]="s().aggSandboxAppId" (ngModelChange)="patch({ aggSandboxAppId: $event })" placeholder="38e1a762-cceb-4d71-9340-c76ad040b42a"></label>
+              <label class="fld c2"><span>Secret (clé secrète) @if (s().aggSandboxSecretSet) { <em>(déjà défini)</em> }</span>
+                <input type="password" [ngModel]="s().aggSandboxSecret" (ngModelChange)="patch({ aggSandboxSecret: $event })" [placeholder]="s().aggSandboxSecretSet ? '•••••••• (laisser vide pour conserver)' : 'Secret sandbox (Bearer de /api/login)'"></label>
+            </div>
+          </div>
 
-            <label class="fld c2"><span>Secret (clé secrète) @if (s().aggSecretSet) { <em>(déjà défini)</em> }</span>
-              <input type="password" [ngModel]="s().aggSecret" (ngModelChange)="patch({ aggSecret: $event })" [placeholder]="s().aggSecretSet ? '•••••••• (laisser vide pour conserver)' : 'Secret obtenu à l’inscription'"></label>
+          <div class="env-block" [class.active]="s().aggMode === 'production'">
+            <div class="env-block-title">🚀 Identifiants Production @if (s().aggMode === 'production') { <span class="badge">actif</span> }</div>
+            <div class="grid">
+              <label class="fld c2"><span>URL de l'API</span>
+                <input [ngModel]="s().aggBaseUrl" (ngModelChange)="patch({ aggBaseUrl: $event })" placeholder="https://mobilewallet.trustpayway.com"></label>
+              <label class="fld c2"><span>Application ID (app_id)</span>
+                <input [ngModel]="s().aggAppId" (ngModelChange)="patch({ aggAppId: $event })" placeholder="b59325d6-21c2-4669-b7c8-8490a6673df7"></label>
+              <label class="fld c2"><span>Secret (clé secrète) @if (s().aggSecretSet) { <em>(déjà défini)</em> }</span>
+                <input type="password" [ngModel]="s().aggSecret" (ngModelChange)="patch({ aggSecret: $event })" [placeholder]="s().aggSecretSet ? '•••••••• (laisser vide pour conserver)' : 'Secret obtenu à l’inscription'"></label>
+            </div>
           </div>
 
           <div class="note agg-note">
@@ -118,7 +144,7 @@ export class PlatformSettingsComponent implements OnInit {
 
   ngOnInit() {
     this.api.get().subscribe((cfg) => {
-      if (cfg) this.s.set({ ...EMPTY, ...cfg, smtpPassword: '', aggSecret: '' });
+      if (cfg) this.s.set({ ...EMPTY, ...cfg, smtpPassword: '', aggSecret: '', aggSandboxSecret: '' });
     });
   }
 
@@ -129,7 +155,7 @@ export class PlatformSettingsComponent implements OnInit {
     this.api.save(this.s()).subscribe((res) => {
       this.saving.set(false);
       if (res) {
-        this.s.set({ ...EMPTY, ...res, smtpPassword: '', aggSecret: '' });
+        this.s.set({ ...EMPTY, ...res, smtpPassword: '', aggSecret: '', aggSandboxSecret: '' });
         this.flash('Paramètres enregistrés.', true);
       } else this.flash("Échec de l'enregistrement (droits ou backend).", false);
     });
