@@ -67,6 +67,15 @@ resilience4j:
         failure-rate-threshold: 50
         wait-duration-in-open-state: 10s
         sliding-window-size: 100
+  # Le filtre CircuitBreaker de Spring Cloud Gateway enveloppe l'appel dans un
+  # TimeLimiter Resilience4j dont le DÉFAUT est 1 s : sous charge, une écriture
+  # légitime >1 s déclenchait un faux fallback 503. On l'aligne sur le
+  # response-timeout du httpclient (5 s) avec une petite marge.
+  timelimiter:
+    instances:
+      transaction-cb:
+        timeout-duration: 4s
+        cancel-running-future: true
 
 management:
   endpoints:

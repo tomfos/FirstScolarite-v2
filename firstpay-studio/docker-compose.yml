@@ -141,12 +141,17 @@ services:
       SPRING_PROFILES_ACTIVE: dev
       DB_USER: firstpay
       DB_PASS: dev_password
-      DB_URL: r2dbc:postgresql://postgres:5432/firstpay
+      # Runtime r2dbc via pgbouncer (pool_mode=transaction) : les backends postgres
+      # sont relâchés à chaque commit → multiplexage, plus de wedge "too many clients".
+      # Flyway garde une URL JDBC directe (migrations bloquantes, session-mode requis).
+      DB_URL: r2dbc:postgresql://pgbouncer:6432/firstpay
       JDBC_URL: jdbc:postgresql://postgres:5432/firstpay
       KAFKA_BROKERS: kafka:9092
       REDIS_URL: redis://redis:6379
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
-      TRACING_SAMPLE_RATE: "1.0"
+      # Échantillonnage 100% = un span par op (Redis + 3 DB + Kafka) sur CHAQUE requête :
+      # coût CPU rédhibitoire sous charge. 5% suffit à l'observabilité et libère le CPU.
+      TRACING_SAMPLE_RATE: "0.05"
     depends_on: [pgbouncer, kafka, redis]
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
@@ -161,7 +166,8 @@ services:
       SPRING_PROFILES_ACTIVE: dev
       DB_USER: firstpay
       DB_PASS: dev_password
-      DB_URL: r2dbc:postgresql://postgres:5432/firstpay
+      # Runtime r2dbc via pgbouncer (transaction pooling) ; Flyway direct sur postgres.
+      DB_URL: r2dbc:postgresql://pgbouncer:6432/firstpay
       JDBC_URL: jdbc:postgresql://postgres:5432/firstpay
       KAFKA_BROKERS: kafka:9092
       TRANSACTION_SVC_URI: http://transaction-service:8080
@@ -202,8 +208,9 @@ services:
       DB_USER: firstpay
       DB_PASS: dev_password
       # Écriture/Flyway sur le primaire ; lectures analytiques sur le réplica (séparation read/write).
-      DB_URL: r2dbc:postgresql://postgres:5432/firstpay
-      READ_DB_URL: r2dbc:postgresql://postgres:5432/firstpay
+      # Runtime r2dbc (read + write) via pgbouncer ; Flyway direct sur postgres.
+      DB_URL: r2dbc:postgresql://pgbouncer:6432/firstpay
+      READ_DB_URL: r2dbc:postgresql://pgbouncer:6432/firstpay
       JDBC_URL: jdbc:postgresql://postgres:5432/firstpay
       KAFKA_BROKERS: kafka:9092
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
