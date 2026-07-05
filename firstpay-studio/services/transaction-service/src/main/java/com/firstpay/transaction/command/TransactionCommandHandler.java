@@ -9,7 +9,9 @@ import com.firstpay.transaction.infra.TransactionEventStream;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.ReactiveTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
@@ -37,18 +39,25 @@ public class TransactionCommandHandler {
     private final OutboxEventPublisher outbox;
     private final EventStore eventStore;
     private final TransactionEventStream events;
+    // Transaction SQL programmatique : permet d'envelopper UNIQUEMENT les écritures DB
+    // (et de laisser l'idempotence Redis hors transaction, cf. handle/createNew).
+    private final TransactionalOperator txOperator;
 
     public TransactionCommandHandler(TransactionStore store, ReactiveStringRedisTemplate redis,
                                      OutboxEventPublisher outbox, EventStore eventStore,
-                                     TransactionEventStream events) {
+                                     TransactionEventStream events, ReactiveTransactionManager txManager) {
         this.store = store;
         this.redis = redis;
         this.outbox = outbox;
         this.eventStore = eventStore;
         this.events = events;
+        this.txOperator = TransactionalOperator.create(txManager);
     }
 
-    @Transactional
+    // NB : pas de @Transactional ici — l'idempotence Redis (SETNX) est faite HORS
+    // transaction SQL. Tenir une connexion DB pendant l'aller-retour Redis occupait
+    // le pool pour rien sous charge (goulot de débit). La transaction n'enveloppe
+    // que les écritures DB (cf. createNew).
     public Mono<Transaction> handle(TransactionCommand.CreateTransaction cmd) {
         String key = "idempotency:%s:%s".formatted(cmd.tenantId(), cmd.idempotencyKey());
         return redis.opsForValue()
@@ -63,12 +72,18 @@ public class TransactionCommandHandler {
             cmd.tenantId(), cmd.externalRef(), cmd.amount(),
             cmd.currency(), cmd.type(), cmd.method(), cmd.idempotencyKey());
         tx.setMetadata(cmd.metadata());
+        String payload = createdPayload(tx); // calculé une seule fois (event store + outbox)
 
-        return store.insert(tx)
-            // 1) event store (source de vérité) + 2) outbox (intégration Kafka), même tx SQL
-            .flatMap(saved -> eventStore.append(saved.getId(), saved.getTenantId(), "TransactionCreated", createdPayload(saved))
-                .then(outbox.publish(saved.getId(), saved.getTenantId(), "TransactionCreated", createdPayload(saved)))
+        // La transaction SQL n'enveloppe QUE les 3 écritures (projection + event store +
+        // outbox), atomiques ensemble. Redis reste dehors (cf. handle).
+        Mono<Transaction> write = store.insert(tx)
+            .flatMap(saved -> eventStore.append(saved.getId(), saved.getTenantId(), "TransactionCreated", payload)
+                .then(outbox.publish(saved.getId(), saved.getTenantId(), "TransactionCreated", payload))
                 .thenReturn(saved))
+            .as(txOperator::transactional);
+
+        return write
+            // Émission SSE après commit réussi.
             .doOnSuccess(saved -> events.emit(TransactionEvent.created(saved)))
             // Filet : si l'index unique DB rejette le doublon, on renvoie l'existante.
             .onErrorResume(DataIntegrityViolationException.class, e -> existing(cmd));
