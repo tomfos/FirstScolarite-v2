@@ -9,7 +9,12 @@ spring:
     pool:
       initial-size: 20
       max-size: 100
-      max-idle-time: 30m
+      # Le pool redescend 5 min après un pic (au lieu de 30 min).
+      max-idle-time: 5m
+      # Fail-fast sous saturation : si aucune connexion dispo en 3 s, on échoue
+      # (→ 503 délestage) au lieu d'empiler des requêtes en attente indéfinie.
+      max-acquire-time: 3s
+      max-create-connection-time: 3s
       validation-query: SELECT 1
 
   # Flyway tourne sur une URL JDBC dédiée (migrations bloquantes au démarrage)

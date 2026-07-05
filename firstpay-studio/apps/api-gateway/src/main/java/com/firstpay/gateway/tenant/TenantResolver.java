@@ -4,9 +4,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -58,10 +60,16 @@ public class TenantResolver {
             .retrieve()
             .bodyToMono(TenantInfo.class)
             .doOnNext(t -> log.debug("Tenant résolu via partner-service : {}", t.code()))
+            // 404 = clé réellement inconnue → empty → 401 en aval (auth refusée).
             .onErrorResume(WebClientResponseException.NotFound.class, e -> Mono.empty())
+            // Toute autre erreur (timeout, 5xx, connexion) = panne d'infrastructure,
+            // PAS une clé invalide : renvoyer 503 (le client peut réessayer) au lieu
+            // de 401. Évite les faux échecs d'auth observés sous burst.
             .onErrorResume(e -> {
                 log.warn("partner-service indisponible pour résolution tenant : {}", e.getMessage());
-                return fallbackEnabled ? fallback(apiKey) : Mono.empty();
+                if (fallbackEnabled) return fallback(apiKey);
+                return Mono.error(new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE, "Résolution du tenant temporairement indisponible"));
             })
             .switchIfEmpty(fallbackEnabled ? fallback(apiKey) : Mono.empty());
     }

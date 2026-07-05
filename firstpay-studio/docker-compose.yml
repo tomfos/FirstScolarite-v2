@@ -39,6 +39,14 @@ services:
       - hot_standby=on
       - -c
       - listen_addresses=*
+      # Montée en charge : plafond de connexions relevé (pgbouncer peut ouvrir
+      # jusqu'à default_pool_size + reserve_pool_size = 120 connexions serveur).
+      - -c
+      - max_connections=300
+      # Tue les transactions laissées "idle in transaction" (fuite r2dbc sous
+      # surcharge) au bout de 30 s → libère connexions + verrous (anti-wedge outbox).
+      - -c
+      - idle_in_transaction_session_timeout=30000
     ports: ["15432:5432"]
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -179,6 +187,7 @@ services:
       KAFKA_BROKERS: kafka:9092
       REDIS_URL: redis://redis:6379
       PARTNER_SVC_URI: http://partner-service:8080
+      TRANSACTION_SVC_URI: http://transaction-service:8080
       INTERNAL_TOKEN: ${INTERNAL_TOKEN:-firstpay-dev-internal}
       PAYMENT_WEBHOOK_BASE: ${PAYMENT_WEBHOOK_BASE:-http://localhost:18080/webhooks/trustpayway}
       PAYMENT_SIMULATION_ENABLED: ${PAYMENT_SIMULATION_ENABLED:-true}

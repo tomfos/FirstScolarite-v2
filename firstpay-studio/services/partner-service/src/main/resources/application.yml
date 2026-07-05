@@ -5,6 +5,15 @@ spring:
     url: ${DB_URL:r2dbc:pool:postgresql://localhost:6432/firstpay}
     username: ${DB_USER:firstpay}
     password: ${DB_PASS:dev_password}
+    # Chemin d'auth (résolution tenant du gateway) : pool borné + fail-fast pour
+    # ne pas suspendre le gateway quand la DB est sous pression.
+    pool:
+      initial-size: 5
+      max-size: 40
+      max-idle-time: 5m
+      max-acquire-time: 3s
+      max-create-connection-time: 3s
+      validation-query: SELECT 1
   flyway:
     url: ${JDBC_URL:jdbc:postgresql://localhost:5432/firstpay}
     user: ${DB_USER:firstpay}
