@@ -46,6 +46,28 @@ k6 run -e API_KEY=xxxx -e SCENARIO=burst -e TARGET_TPS=100 -e BURST_FACTOR=5 tra
 k6 run -e BASE_URL=http://localhost:18080 -e API_KEY=xxxx -e SCENARIO=smoke transactions.js
 ```
 
+### Tout enchaîner en une commande
+
+`run-k6.sh` lance smoke → load → burst et sauvegarde chaque résumé dans
+`./k6-results/` :
+
+```bash
+./run-k6.sh              # les 3 étapes
+./run-k6.sh smoke        # une seule (smoke | load | burst)
+TARGET_TPS=200 ./run-k6.sh load   # surcharger un paramètre
+```
+
+**Signification des 3 étapes :**
+- **smoke** — 5 req/s pendant 30 s. But : vérifier que la connexion, le TLS et
+  la clé API marchent (aucun 401/403) *avant* d'envoyer de la charge. Un
+  contrôle de bon fonctionnement, pas une mesure de performance.
+- **load** — montée jusqu'à `TARGET_TPS` puis palier soutenu. But : mesurer le
+  comportement en régime établi au débit cible (P50/P95/P99, taux d'erreur).
+  C'est LE test qui répond à « tient-elle la charge de 1M users/jour ? ».
+- **burst** — nominal → pic ×`BURST_FACTOR` → retour nominal. But : voir si le
+  système absorbe une pointe soudaine (heure de pointe) puis **récupère** sans
+  rester dégradé (backpressure & recovery).
+
 ### Paramètres (`-e CLE=valeur`)
 
 | Variable | Défaut | Rôle |
