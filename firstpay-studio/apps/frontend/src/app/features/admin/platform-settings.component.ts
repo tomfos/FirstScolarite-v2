@@ -10,6 +10,10 @@ const EMPTY: PlatformSettings = {
   aggBaseUrl: 'https://mobilewallet.trustpayway.com', aggAppId: '', aggSecret: '', aggSecretSet: false,
   aggSandboxBaseUrl: 'https://mobilewallet.trustpayway.com', aggSandboxAppId: '', aggSandboxSecret: '',
   aggSandboxSecretSet: false,
+  mpgsEnabled: false, mpgsMode: 'production', mpgsApiVersion: '100',
+  mpgsHost: 'na-gateway.mastercard.com', mpgsMerchantId: '', mpgsPassword: '', mpgsPasswordSet: false,
+  mpgsSandboxHost: 'test-gateway.mastercard.com', mpgsSandboxMerchantId: '', mpgsSandboxPassword: '',
+  mpgsSandboxPasswordSet: false,
 };
 
 @Component({
@@ -119,6 +123,62 @@ const EMPTY: PlatformSettings = {
           </div>
         </div>
 
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Passerelle carte MPGS (Mastercard)</div>
+            <label class="switch-row">
+              <span>Activer le paiement par carte</span>
+              <span class="switch"><input type="checkbox" [ngModel]="s().mpgsEnabled" (ngModelChange)="patch({ mpgsEnabled: $event })"><span class="slider"></span></span>
+            </label>
+          </div>
+
+          <div class="env-switch" role="tablist">
+            <button type="button" role="tab" [class.active]="s().mpgsMode === 'sandbox'"
+              (click)="patch({ mpgsMode: 'sandbox' })">🧪 Sandbox (test)</button>
+            <button type="button" role="tab" [class.active]="s().mpgsMode === 'production'"
+              (click)="patch({ mpgsMode: 'production' })">🚀 Production</button>
+          </div>
+          <div class="env-hint">
+            Environnement actif : <b>{{ s().mpgsMode === 'sandbox' ? 'Sandbox (test)' : 'Production' }}</b>.
+            Paiement carte via <b>Hosted Checkout</b> (redirection sécurisée 3D-Secure). Bascule sans ressaisie.
+          </div>
+
+          <div class="env-block" [class.active]="s().mpgsMode === 'sandbox'">
+            <div class="env-block-title">🧪 Identifiants Sandbox @if (s().mpgsMode === 'sandbox') { <span class="badge">actif</span> }</div>
+            <div class="grid">
+              <label class="fld c2"><span>Hôte passerelle</span>
+                <input [ngModel]="s().mpgsSandboxHost" (ngModelChange)="patch({ mpgsSandboxHost: $event })" placeholder="test-gateway.mastercard.com"></label>
+              <label class="fld c2"><span>Merchant ID</span>
+                <input [ngModel]="s().mpgsSandboxMerchantId" (ngModelChange)="patch({ mpgsSandboxMerchantId: $event })" placeholder="TESTAFB-MARCHANT"></label>
+              <label class="fld c2"><span>Mot de passe API @if (s().mpgsSandboxPasswordSet) { <em>(déjà défini)</em> }</span>
+                <input type="password" [ngModel]="s().mpgsSandboxPassword" (ngModelChange)="patch({ mpgsSandboxPassword: $event })" [placeholder]="s().mpgsSandboxPasswordSet ? '•••••••• (laisser vide pour conserver)' : 'Mot de passe marchand de test'"></label>
+            </div>
+          </div>
+
+          <div class="env-block" [class.active]="s().mpgsMode === 'production'">
+            <div class="env-block-title">🚀 Identifiants Production @if (s().mpgsMode === 'production') { <span class="badge">actif</span> }</div>
+            <div class="grid">
+              <label class="fld c2"><span>Hôte passerelle</span>
+                <input [ngModel]="s().mpgsHost" (ngModelChange)="patch({ mpgsHost: $event })" placeholder="na-gateway.mastercard.com"></label>
+              <label class="fld c2"><span>Merchant ID</span>
+                <input [ngModel]="s().mpgsMerchantId" (ngModelChange)="patch({ mpgsMerchantId: $event })" placeholder="001020345"></label>
+              <label class="fld c2"><span>Mot de passe API @if (s().mpgsPasswordSet) { <em>(déjà défini)</em> }</span>
+                <input type="password" [ngModel]="s().mpgsPassword" (ngModelChange)="patch({ mpgsPassword: $event })" [placeholder]="s().mpgsPasswordSet ? '•••••••• (laisser vide pour conserver)' : 'Mot de passe marchand de production'"></label>
+            </div>
+          </div>
+
+          <div class="grid">
+            <label class="fld"><span>Version API REST</span>
+              <input [ngModel]="s().mpgsApiVersion" (ngModelChange)="patch({ mpgsApiVersion: $event })" placeholder="100"></label>
+          </div>
+
+          <div class="note agg-note">
+            Flux : la page payeur crée la transaction, ouvre la page Mastercard hébergée, puis le retour
+            confirme le paiement côté serveur (<code>GET .../order/&#123;id&#125;</code>). Le mot de passe marchand
+            ne quitte jamais le serveur.
+          </div>
+        </div>
+
         @if (msg()) { <div class="banner" [class.ok]="msgOk()" [class.ko]="!msgOk()">{{ msg() }}</div> }
 
         <div class="save-row">
@@ -144,7 +204,7 @@ export class PlatformSettingsComponent implements OnInit {
 
   ngOnInit() {
     this.api.get().subscribe((cfg) => {
-      if (cfg) this.s.set({ ...EMPTY, ...cfg, smtpPassword: '', aggSecret: '', aggSandboxSecret: '' });
+      if (cfg) this.s.set({ ...EMPTY, ...cfg, smtpPassword: '', aggSecret: '', aggSandboxSecret: '', mpgsPassword: '', mpgsSandboxPassword: '' });
     });
   }
 
@@ -155,7 +215,7 @@ export class PlatformSettingsComponent implements OnInit {
     this.api.save(this.s()).subscribe((res) => {
       this.saving.set(false);
       if (res) {
-        this.s.set({ ...EMPTY, ...res, smtpPassword: '', aggSecret: '', aggSandboxSecret: '' });
+        this.s.set({ ...EMPTY, ...res, smtpPassword: '', aggSecret: '', aggSandboxSecret: '', mpgsPassword: '', mpgsSandboxPassword: '' });
         this.flash('Paramètres enregistrés.', true);
       } else this.flash("Échec de l'enregistrement (droits ou backend).", false);
     });

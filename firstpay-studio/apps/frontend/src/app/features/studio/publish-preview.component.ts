@@ -3,6 +3,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CustomField, Method, PaymentInterface, Preset } from '../../core/models/interface.model';
 import { Partner } from '../../core/tenant/tenant-context.service';
+import { MethodIconComponent } from '../../shared/components/method-icon.component';
 import { payHost } from '../../shared/pay-url';
 
 interface PvMethod { id: Method; name: string; brand: string; }
@@ -17,7 +18,7 @@ interface PvMethod { id: Method; name: string; brand: string; }
 @Component({
   selector: 'fp-publish-preview',
   standalone: true,
-  imports: [FormsModule, NgTemplateOutlet],
+  imports: [FormsModule, NgTemplateOutlet, MethodIconComponent],
   styleUrl: './publish-preview.component.scss',
   template: `
     <div class="overlay" (click)="close.emit()">
@@ -116,7 +117,7 @@ interface PvMethod { id: Method; name: string; brand: string; }
     <!-- ============ Contenu de l'écran payeur (partagé mobile/web) ============ -->
     <ng-template #phoneContent>
       <div class="ph-head">
-        <div class="ph-logo">FSP</div>
+        <div class="ph-logo">CCF</div>
         <div class="ph-id">
           <div class="ph-partner">{{ partner().name }}</div>
           <div class="ph-name">{{ data().name || 'Interface' }}</div>
@@ -212,7 +213,7 @@ interface PvMethod { id: Method; name: string; brand: string; }
             <div class="pv-methods">
               @for (m of enabledMethods(); track m.id) {
                 <button class="pv-method" [class.on]="method() === m.id" (click)="method.set(m.id)">
-                  <span class="pm-ico" [style.background]="m.brand + '18'" [style.color]="m.brand">{{ m.name.charAt(0) }}</span>
+                  <fp-method-icon class="pm-ico" [method]="m.id" [size]="32" />
                   <span class="grow">{{ m.name }}</span>
                   @if (hasQr(m.id)) { <span class="pm-qr">QR</span> }
                 </button>
@@ -377,7 +378,7 @@ export class PublishPreviewComponent implements OnInit {
         : this.payKind() === 'qr' ? 'Un QR code est affiché ; le client le scanne avec son application pour valider.'
         : this.payKind() === 'card' ? 'Le client saisit ses informations carte sur une page sécurisée 3DS.'
         : 'Le client suit les instructions USSD ou valide sur son téléphone.' },
-      { title: "Confirmation", text: 'Le client reçoit une confirmation immédiate. Vous êtes notifié dans le tableau de bord FirstStudioPay.' },
+      { title: "Confirmation", text: 'Le client reçoit une confirmation immédiate. Vous êtes notifié dans le tableau de bord Cash collect First.' },
     ];
     return items[this.step()];
   });

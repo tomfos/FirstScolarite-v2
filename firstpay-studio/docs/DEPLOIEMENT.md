@@ -1,6 +1,6 @@
-# Guide de déploiement — FirstPay Studio
+# Guide de déploiement — Cash collect First
 
-Ce document décrit le déploiement de la plateforme FirstPay Studio en **environnement de test** (recette / staging) et en **environnement de production**, avec deux profils de données :
+Ce document décrit le déploiement de la plateforme Cash collect First en **environnement de test** (recette / staging) et en **environnement de production**, avec deux profils de données :
 
 | Profil | Usage | Données |
 |--------|-------|---------|

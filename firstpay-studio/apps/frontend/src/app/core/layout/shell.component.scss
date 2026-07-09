@@ -1,7 +1,7 @@
 .shell { display: flex; min-height: 100vh; background: var(--bg); }
 
 .sidebar {
-  width: 232px; flex-shrink: 0; background: #fff;
+  width: 232px; flex-shrink: 0; background: var(--surface);
   border-right: 1px solid var(--border);
   display: flex; flex-direction: column;
   height: 100vh; position: sticky; top: 0;
@@ -36,7 +36,7 @@ nav { padding: 8px 10px; flex: 1; }
 
 .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .topbar {
-  padding: 14px 28px; background: #fff; border-bottom: 1px solid var(--border);
+  padding: 14px 28px; background: var(--surface); border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
 }
 .crumb-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
@@ -45,13 +45,19 @@ nav { padding: 8px 10px; flex: 1; }
 .role-badge { padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 .imp-badge {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 5px 12px; border-radius: 999px; background: #FFF5F5; color: var(--fp-red-dark);
+  padding: 5px 12px; border-radius: 999px; background: var(--fp-red-50); color: var(--fp-red-dark);
   font-size: 12px; font-weight: 700;
 }
 .imp-badge button { border: none; background: var(--fp-red); color: #fff; border-radius: 6px; padding: 3px 8px; font-size: 11px; }
 
 .topbar-right { display: flex; align-items: center; gap: 14px; }
+.theme-toggle {
+  display: grid; place-items: center; width: 36px; height: 36px;
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2);
+  border-radius: 9px; transition: background .12s, color .12s, border-color .12s;
+}
+.theme-toggle:hover { background: var(--surface-2); color: var(--text); border-color: var(--text-3); }
 .user { font-size: 13px; font-weight: 600; color: var(--text-2); }
-.logout { border: 1px solid var(--border-strong); background: #fff; color: var(--text-2); border-radius: 8px; padding: 7px 12px; font-size: 13px; font-weight: 600; }
+.logout { border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); border-radius: 8px; padding: 7px 12px; font-size: 13px; font-weight: 600; }
 
 .content { flex: 1; display: flex; min-height: 0; }

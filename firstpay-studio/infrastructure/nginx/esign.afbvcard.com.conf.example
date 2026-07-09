@@ -1,4 +1,4 @@
-# Exemple de site nginx pour FirstPay Studio derrière Certbot.
+# Exemple de site nginx pour Cash collect First derrière Certbot.
 # Copier vers /etc/nginx/sites-available/esign.afbvcard.com puis activer :
 #   sudo ln -sf /etc/nginx/sites-available/esign.afbvcard.com /etc/nginx/sites-enabled/
 #   sudo certbot --nginx -d esign.afbvcard.com

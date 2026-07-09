@@ -56,7 +56,7 @@ public class PaymentEventConsumer {
     private Mono<Void> handle(ReceiverRecord<String, String> rec) {
         return Mono.fromCallable(() -> parse(rec.value()))
             .flatMap(orchestrator::process)
-            .flatMap(result -> result.isPending() ? Mono.empty() : publish(result))
+            .flatMap(result -> result.isPending() || result.isAwaitingCheckout() ? Mono.empty() : publish(result))
             .onErrorResume(e -> Mono.empty())
             .doFinally(s -> rec.receiverOffset().acknowledge());
     }

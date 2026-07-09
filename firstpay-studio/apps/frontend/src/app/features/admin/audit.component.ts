@@ -23,7 +23,7 @@ const FALLBACK: AuditEventDto[] = [];
   template: `
     <div class="page">
       <div class="head">
-        <div class="eyebrow">Plateforme FirstStudioPay · Supervision</div>
+        <div class="eyebrow">Plateforme Cash collect First · Supervision</div>
         <div class="title">Journal d'audit</div>
         <div class="subtitle">Toutes les actions critiques sur la plateforme, en temps réel, conservées 12 mois.</div>
       </div>

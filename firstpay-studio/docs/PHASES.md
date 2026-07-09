@@ -1,4 +1,4 @@
-# Phases d'implémentation — FirstPay Studio
+# Phases d'implémentation — Cash collect First
 
 Roadmap incrémentale : chaque phase est livrable, testable et déployable.
 

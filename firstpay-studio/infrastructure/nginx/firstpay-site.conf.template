@@ -1,4 +1,4 @@
-# FirstPay Studio — site nginx hôte, variante HTTP seule (généré par setup-nginx-production.sh).
+# Cash collect First — site nginx hôte, variante HTTP seule (généré par setup-nginx-production.sh).
 # Utilisée tant qu'aucun certificat Let's Encrypt n'existe pour ${DOMAIN}
 # (bootstrap / émission via certbot). Dès que le certificat est présent, le script
 # génère plutôt firstpay-site-ssl.conf.template (redirection 80→443 + bloc HTTPS).

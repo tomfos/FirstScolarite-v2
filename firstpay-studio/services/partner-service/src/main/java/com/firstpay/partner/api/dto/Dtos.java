@@ -57,7 +57,11 @@ public final class Dtos {
         String appBaseUrl, boolean passwordSet,
         boolean aggEnabled, String aggBaseUrl, String aggAppId, String aggSecret, boolean aggSecretSet,
         String aggMode,
-        String aggSandboxBaseUrl, String aggSandboxAppId, String aggSandboxSecret, boolean aggSandboxSecretSet) {}
+        String aggSandboxBaseUrl, String aggSandboxAppId, String aggSandboxSecret, boolean aggSandboxSecretSet,
+        // Passerelle carte MPGS (Mastercard). Deux jeux d'identifiants + mode, mot de passe masqué en lecture.
+        boolean mpgsEnabled, String mpgsMode, String mpgsApiVersion,
+        String mpgsHost, String mpgsMerchantId, String mpgsPassword, boolean mpgsPasswordSet,
+        String mpgsSandboxHost, String mpgsSandboxMerchantId, String mpgsSandboxPassword, boolean mpgsSandboxPasswordSet) {}
 
     /**
      * Config agrégateur résolue selon le mode actif (usage interne payment-service, secret inclus).
@@ -65,6 +69,14 @@ public final class Dtos {
      */
     public record AggregatorConfigDto(
         boolean enabled, String baseUrl, String appId, String secret, String webhookBaseUrl, String mode) {}
+
+    /**
+     * Config MPGS résolue selon le mode actif (usage interne payment-service, mot de passe inclus).
+     * {@code appBaseUrl} sert à construire la returnUrl absolue du Hosted Checkout.
+     */
+    public record MpgsConfigDto(
+        boolean enabled, String host, String merchantId, String password,
+        String apiVersion, String appBaseUrl, String mode) {}
 
     public record UserDto(String id, String name, String email, String role, String status) {}
 

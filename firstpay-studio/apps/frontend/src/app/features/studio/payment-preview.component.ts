@@ -1,12 +1,14 @@
 import { AfterViewInit, Component, ElementRef, computed, inject, input } from '@angular/core';
 import { gsap } from 'gsap';
-import { CustomField, PaymentInterface, METHOD_LABELS, Method } from '../../core/models/interface.model';
+import { countryOf, CustomField, PaymentInterface, METHOD_LABELS, Method } from '../../core/models/interface.model';
 import { Partner } from '../../core/tenant/tenant-context.service';
+import { MethodIconComponent } from '../../shared/components/method-icon.component';
 
 /** Aperçu de la page de paiement publique (mobile-like), reflète la config en direct. */
 @Component({
   selector: 'fp-payment-preview',
   standalone: true,
+  imports: [MethodIconComponent],
   styleUrl: './payment-preview.component.scss',
   template: `
     <div class="frame">
@@ -62,7 +64,9 @@ import { Partner } from '../../core/tenant/tenant-context.service';
             <div class="m-lbl">Moyens de paiement</div>
             <div class="m-grid">
               @for (m of activeMethods(); track m) {
-                <div class="m-pill" [class.orange]="m==='orange'" [class.mtn]="m==='mtn'">{{ label(m) }}</div>
+                <div class="m-pill" [class.orange]="m==='orange'" [class.mtn]="m==='mtn'">
+                  <fp-method-icon [method]="m" [size]="16" />{{ label(m) }}
+                </div>
               }
             </div>
           </div>
@@ -104,7 +108,8 @@ export class PaymentPreviewComponent implements AfterViewInit {
     switch (f.type) {
       case 'select': return 'Sélectionner…';
       case 'date': return 'JJ/MM/AAAA';
-      case 'phone': return '+237 6XX XX XX XX';
+      case 'phone': return '+' + countryOf(this.data().country).dial + ' XX XX XX XX';
+      case 'matricule': return 'Saisir le matricule…';
       default: return 'Saisir…';
     }
   }

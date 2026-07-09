@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Déploiement production complet — FirstPay Studio sur VPS (Docker Compose + SSL Caddy).
+# Déploiement production complet — Cash collect First sur VPS (Docker Compose + SSL Caddy).
 #
 # Prérequis serveur :
 #   - Ubuntu 22.04+ / Debian 12+
@@ -210,7 +210,7 @@ post_deploy_info() {
   cat <<EOF
 
 ╔══════════════════════════════════════════════════════════════════╗
-║  FirstPay Studio — déploiement terminé                           ║
+║  Cash collect First — déploiement terminé                           ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  Application : ${base}
 ${api_hint}

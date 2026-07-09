@@ -51,27 +51,30 @@ public class InterfaceStore {
 
         DatabaseClient.GenericExecuteSpec spec = db.sql("""
                 INSERT INTO payment_interfaces (
-                  id, tenant_id, name, description, sector, slug, custom_slug, status,
+                  id, tenant_id, name, description, sector, country, slug, custom_slug, status,
                   amount_type, fixed_amount, min_amount, max_amount, currency,
-                  presets, multi_select, ref_type, ref_label, ref_format, methods, qr_codes, updated_at
+                  presets, multi_select, ref_type, ref_label, ref_format, methods, qr_codes, establishment, updated_at
                 ) VALUES (
-                  :id, :tenant, :name, :desc, :sector, :slug, :customSlug, :status,
+                  :id, :tenant, :name, :desc, :sector, :country, :slug, :customSlug, :status,
                   :amountType, :fixed, :min, :max, :currency,
-                  :presets::jsonb, :multi, :refType, :refLabel, :refFormat, :methods::jsonb, :qr::jsonb, now()
+                  :presets::jsonb, :multi, :refType, :refLabel, :refFormat, :methods::jsonb, :qr::jsonb, :establishment, now()
                 )
                 ON CONFLICT (id) DO UPDATE SET
                   name = EXCLUDED.name, description = EXCLUDED.description, sector = EXCLUDED.sector,
+                  country = EXCLUDED.country,
                   slug = EXCLUDED.slug, custom_slug = EXCLUDED.custom_slug, status = EXCLUDED.status,
                   amount_type = EXCLUDED.amount_type, fixed_amount = EXCLUDED.fixed_amount,
                   min_amount = EXCLUDED.min_amount, max_amount = EXCLUDED.max_amount,
                   currency = EXCLUDED.currency, presets = EXCLUDED.presets, multi_select = EXCLUDED.multi_select,
                   ref_type = EXCLUDED.ref_type, ref_label = EXCLUDED.ref_label, ref_format = EXCLUDED.ref_format,
-                  methods = EXCLUDED.methods, qr_codes = EXCLUDED.qr_codes, updated_at = now()
+                  methods = EXCLUDED.methods, qr_codes = EXCLUDED.qr_codes, establishment = EXCLUDED.establishment,
+                  updated_at = now()
                 """)
             .bind("id", id).bind("tenant", tenantId)
             .bind("name", req.name())
             .bind("desc", req.description() != null ? req.description() : "")
             .bind("sector", req.sector() != null ? req.sector() : "")
+            .bind("country", req.country() != null && !req.country().isBlank() ? req.country() : "CM")
             .bind("slug", slug)
             .bind("customSlug", req.customSlug() != null ? req.customSlug() : slug)
             .bind("status", req.status() != null ? req.status() : "brouillon")
@@ -83,7 +86,8 @@ public class InterfaceStore {
             .bind("refLabel", req.refLabel() != null ? req.refLabel() : "")
             .bind("refFormat", req.refFormat() != null ? req.refFormat() : "any")
             .bind("methods", methodsJson)
-            .bind("qr", qrJson);
+            .bind("qr", qrJson)
+            .bind("establishment", req.establishment() != null ? req.establishment().trim() : "");
 
         // Montants nullables : R2DBC exige bindNull(...) explicite quand la valeur est absente.
         spec = bindAmount(spec, "fixed", req.fixedAmount());
@@ -109,8 +113,9 @@ public class InterfaceStore {
                 .index()
                 .concatMap(tuple -> {
                     InterfaceFieldDto f = tuple.getT2();
-                    UUID fieldId = f.id() != null && !f.id().isBlank()
-                        ? UUID.fromString(f.id()) : UUID.randomUUID();
+                    // Un nouveau champ ajouté dans le Studio a un id client temporaire (« cf-<timestamp> »)
+                    // qui n'est PAS un UUID : on lui attribue un UUID serveur au lieu de planter (500).
+                    UUID fieldId = toUuidOrRandom(f.id());
                     return db.sql("""
                             INSERT INTO interface_fields (id, interface_id, type, label, required, readonly, options, position)
                             VALUES (:id, :iface, :type, :label, :req, :ro, :opts::jsonb, :pos)
@@ -142,11 +147,11 @@ public class InterfaceStore {
             .all()
             .collectList()
             .map(fields -> new InterfaceDto(
-                base.id(), base.tenantId(), base.name(), base.description(), base.sector(),
+                base.id(), base.tenantId(), base.name(), base.description(), base.sector(), base.country(),
                 base.slug(), base.customSlug(), base.status(), base.tx(), base.collected(),
                 base.amountType(), base.fixedAmount(), base.minAmount(), base.maxAmount(), base.currency(),
                 base.presets(), base.multiSelect(), base.refType(), base.refLabel(), base.refFormat(),
-                fields, base.methods(), base.qrCodes()
+                fields, base.methods(), base.qrCodes(), base.establishment()
             ));
     }
 
@@ -157,6 +162,7 @@ public class InterfaceStore {
             r.get("name", String.class),
             r.get("description", String.class),
             r.get("sector", String.class),
+            r.get("country", String.class) != null ? r.get("country", String.class) : "CM",
             r.get("slug", String.class),
             r.get("custom_slug", String.class),
             r.get("status", String.class),
@@ -174,7 +180,8 @@ public class InterfaceStore {
             r.get("ref_format", String.class),
             List.of(),
             parseBoolMap(r.get("methods", String.class)),
-            parseBoolMap(r.get("qr_codes", String.class))
+            parseBoolMap(r.get("qr_codes", String.class)),
+            r.get("establishment", String.class) != null ? r.get("establishment", String.class) : ""
         );
     }
 
@@ -218,6 +225,16 @@ public class InterfaceStore {
             return mapper.writeValueAsString(o);
         } catch (Exception e) {
             return "{}";
+        }
+    }
+
+    /** UUID à partir d'un id client, ou UUID aléatoire si absent/non-UUID (ex : « cf-172… » du Studio). */
+    private static UUID toUuidOrRandom(String id) {
+        if (id == null || id.isBlank()) return UUID.randomUUID();
+        try {
+            return UUID.fromString(id);
+        } catch (IllegalArgumentException e) {
+            return UUID.randomUUID();
         }
     }
 

@@ -1,5 +1,15 @@
 .frame { display: flex; justify-content: center; padding: 8px; }
-.phone { width: 320px; background: #fff; border: 1px solid var(--border); border-radius: 22px; overflow: hidden; box-shadow: var(--shadow-lg); animation: fp-float 6s ease-in-out infinite; will-change: transform; }
+/* L'écran du téléphone reproduit la vraie page payeur, qui est toujours en clair : on fige
+   donc les tokens en valeurs claires quel que soit le thème de l'appli (sinon le texte hérite
+   des couleurs sombres et devient illisible sur le fond blanc). Le châssis autour (.preview-pane)
+   reste sombre, si bien que le téléphone clair « flotte » proprement sur fond sombre. */
+.phone {
+  --bg: #F7F8FA;        --surface: #FFFFFF;      --surface-2: #F7F8FA;   --surface-3: #EEF0F4;
+  --border: #ECEEF2;    --border-strong: #D9DDE3;
+  --text: #1A1D21;      --text-2: #5A6270;       --text-3: #8A93A0;
+  --fp-red-50: #FFF5F5; --fp-red-soft: #FDECEA;  --green-soft: #E6F4EC;
+  color-scheme: light; color: var(--text);
+  width: 320px; background: var(--surface); border: 1px solid var(--border); border-radius: 22px; overflow: hidden; box-shadow: var(--shadow-lg); animation: fp-float 6s ease-in-out infinite; will-change: transform; }
 @keyframes fp-float { 0%, 100% { transform: translateY(0) rotate(-.3deg); } 50% { transform: translateY(-9px) rotate(.3deg); } }
 .brandbar { background: linear-gradient(135deg, #E53935, #C62828); color: #fff; padding: 18px 18px 16px; display: flex; align-items: center; gap: 12px; }
 .brand-logo { width: 36px; height: 36px; border-radius: 9px; background: rgba(255,255,255,.18); display: grid; place-items: center; font-weight: 800; font-size: 13px; }
@@ -28,7 +38,7 @@
 .methods { margin-top: 16px; }
 .m-lbl { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .05em; font-weight: 700; margin-bottom: 8px; }
 .m-grid { display: flex; flex-wrap: wrap; gap: 7px; }
-.m-pill { padding: 7px 11px; border-radius: 8px; border: 1px solid var(--border-strong); font-size: 12px; font-weight: 600; background: #fff; }
+.m-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 8px; border: 1px solid var(--border-strong); font-size: 12px; font-weight: 600; background: #fff; }
 .m-pill.orange { border-color: #FF7900; color: #B85600; background: #FFF4EA; }
 .m-pill.mtn { border-color: #FFCB05; color: #8A6D00; background: #FFFBE8; }
 

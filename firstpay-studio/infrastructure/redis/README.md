@@ -1,4 +1,4 @@
-# Redis — FirstPay Studio
+# Redis — Cash collect First
 
 Trois usages, un cluster :
 

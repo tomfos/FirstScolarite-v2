@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>Paiement sécurisé · FirstStudioPay</title>
+  <title>Paiement sécurisé · Cash collect First</title>
   <meta name="robots" content="noindex" />
   <style>
     :root { --fp:#E53935; --bg:#F6F7F9; --border:#E6E8EC; --border-strong:#D6D9DF;
@@ -85,7 +85,15 @@
     .hide { display:none; }
     .mono { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
 
-    /* Barre de progression 5 étapes */
+    /* Statut de recherche du matricule (auto-remplissage) */
+    .mat-status { font-size:12.5px; margin-top:6px; line-height:1.4; }
+    .mat-hint { color:var(--text-3); }
+    .mat-loading { color:var(--text-2); }
+    .mat-loading::before { content:'⏳ '; }
+    .mat-ok { color:#1E7E45; }
+    .mat-err { color:#B71C1C; }
+
+    /* Barre de progression (2 étapes) */
     .steps { display:flex; align-items:center; margin:16px 0 18px; }
     .stp { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:default; }
     .stp[data-step] { cursor:pointer; }
@@ -113,7 +121,8 @@
     .mrow { display:flex; align-items:center; gap:12px; width:100%; padding:12px 14px; border-radius:12px;
       border:1.5px solid var(--border-strong); background:#fff; cursor:pointer; text-align:left; }
     .mrow.on { border-color:var(--fp); background:#FFF5F5; box-shadow:0 0 0 2px rgba(229,57,53,.10) inset; }
-    .m-ic { width:38px; height:38px; border-radius:10px; display:grid; place-items:center; font-weight:800; flex-shrink:0; }
+    .m-ic { width:38px; height:38px; border-radius:10px; display:grid; place-items:center; font-weight:800; flex-shrink:0; line-height:0; }
+    .m-ic svg { display:block; width:34px; height:34px; }
     .m-name { flex:1; font-size:14px; font-weight:600; }
     .m-qr { padding:2px 8px; border-radius:99px; background:#15181E; color:#fff; font-size:10px; font-weight:700; }
 
@@ -142,8 +151,8 @@
   <div class="wrap">
     <div class="card">
       <div class="brandbar">
-        <div class="blogo" id="logo">FSP</div>
-        <div class="bname" id="merchant">FirstStudioPay</div>
+        <div class="blogo" id="logo">CCF</div>
+        <div class="bname" id="merchant">Cash collect First</div>
       </div>
       <div class="body" id="body">
         <div class="center"><div class="spin"></div><div class="rsub">Chargement de la page de paiement…</div></div>

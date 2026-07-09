@@ -5,11 +5,11 @@
 .subtitle { font-size: 12.5px; color: var(--text-3); margin-top: 3px; }
 
 .filters { padding: 16px 24px; display: flex; gap: 8px; border-bottom: 1px solid var(--border); }
-.chip { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border-strong); background: #fff; color: var(--text-2); font-size: 12.5px; font-weight: 600; }
+.chip { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); font-size: 12.5px; font-weight: 600; }
 .chip.on { background: var(--text); color: #fff; border-color: var(--text); }
 
 .body { flex: 1; overflow: auto; padding: 24px; }
-.list { background: #fff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); }
+.list { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); }
 .ev { display: flex; gap: 14px; align-items: center; padding: 14px 20px; border-top: 1px solid var(--border); }
 .ev:first-child { border-top: none; }
 .ev.warning { background: var(--amber-soft); }

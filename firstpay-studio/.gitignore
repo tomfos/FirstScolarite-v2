@@ -1,6 +1,7 @@
-# Java / Maven
+# Java / Maven / Gradle
 target/
 *.class
+.gradle/
 # Node / Angular
 node_modules/
 dist/
@@ -9,8 +10,12 @@ out-tsc/
 # Env & secrets
 .env
 *.env
+.env.demo
 .env.local
 !.env.production.example
+!.env.demo.example
+# Configs générées
+infrastructure/nginx/generated/
 # IDE / OS
 .idea/
 .vscode/

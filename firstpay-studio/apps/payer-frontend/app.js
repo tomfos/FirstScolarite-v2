@@ -1,8 +1,8 @@
 /*
- * Page payeur publique FirstStudioPay — app statique autonome (sans framework).
- * Parcours en 5 écrans, identique à l'aperçu du Studio :
- *   0 Identification · 1 Choix du montant · 2 Moyen de paiement · 3 Paiement · 4 Confirmation
- * Flux : résout /{shortCode}/{slug} via l'API publique, guide le payeur étape par étape,
+ * Page payeur publique Cash collect First — app statique autonome (sans framework).
+ * Parcours court en 2 étapes (moins fatigant pour le payeur, meilleure UX) :
+ *   0 Détails (identification + montant) · 1 Paiement (moyen + numéro/carte) → écran de résultat
+ * Flux : résout /{shortCode}/{slug} via l'API publique, guide le payeur en deux écrans,
  * initie le paiement (POST /pay) puis interroge le statut jusqu'à l'état final.
  * Toute la validation faisant autorité reste côté serveur ; ici on assiste la saisie.
  */
@@ -10,8 +10,21 @@
   'use strict';
 
   var METHOD_LABELS = { orange: 'Orange Money', mtn: 'MTN MoMo', card: 'Carte bancaire', transfer: 'Virement bancaire' };
+  // Indicatif téléphonique par pays (ISO-2 → indicatif). Cameroun par défaut.
+  var DIAL_CODES = { CM: '237', CI: '225', SN: '221', GA: '241', CG: '242', CD: '243', TD: '235', BJ: '229', BF: '226', ML: '223', TG: '228', GN: '224' };
+  function dialCode() { return DIAL_CODES[(state.data && state.data.country) || 'CM'] || '237'; }
+  function phonePlaceholder() { return '+' + dialCode() + ' XX XX XX XX'; }
   var METHOD_BRAND = { orange: '#FF7900', mtn: '#FFCC00', card: '#2563EB', transfer: '#1F9D55' };
-  var STEP_LABELS = ['Identification', 'Montant', 'Moyen', 'Paiement', 'Terminé'];
+  // Icônes des moyens de paiement : repères de marque simplifiés (carré Orange, monogramme MTN,
+  // cercles carte, glyphe d'agence bancaire), et non des reproductions exactes de logos.
+  var METHOD_ICON = {
+    orange: '<svg width="34" height="34" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#FF7900"/><rect x="11.5" y="11.5" width="9" height="9" rx="1.5" fill="#fff"/></svg>',
+    mtn: '<svg width="34" height="34" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#FFCC00"/><text x="16" y="20.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="800" fill="#004F71">MTN</text></svg>',
+    card: '<svg width="34" height="34" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#F3F4F7"/><circle cx="13.5" cy="16" r="6.5" fill="#EB001B"/><circle cx="18.5" cy="16" r="6.5" fill="#F79E1B" fill-opacity="0.92"/></svg>',
+    transfer: '<svg width="34" height="34" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#1F9D55"/><g fill="#fff"><path d="M16 7 L24 12 H8 Z"/><rect x="9.5" y="13" width="2.2" height="8" rx="0.5"/><rect x="14.9" y="13" width="2.2" height="8" rx="0.5"/><rect x="20.3" y="13" width="2.2" height="8" rx="0.5"/><rect x="7" y="22" width="18" height="2.6" rx="1"/></g></svg>',
+  };
+  var STEP_LABELS = ['Détails', 'Paiement'];
+  var LAST_STEP = STEP_LABELS.length - 1; // dernière étape de saisie (déclenche le paiement)
 
   var bodyEl = document.getElementById('body');
   var merchantEl = document.getElementById('merchant');
@@ -31,14 +44,26 @@
     error: '',
     paying: false,         // POST /pay en cours / polling
     payment: null,         // { transactionId, reference }
-    result: null           // tx final
+    result: null,          // tx final
+    // Auto-remplissage par matricule
+    matriculeVerified: false,
+    matriculeLoading: false,
+    matriculeError: '',
+    autoFilled: {}         // ids des champs remplis automatiquement (pour pouvoir les vider)
   };
+  var matTimer = null;
 
   if (!shortCode || !slug) { renderError('Lien de paiement invalide.', 'Vérifiez l’adresse reçue.'); return; }
 
   fetch('/public/p/' + encodeURIComponent(shortCode) + '/' + encodeURIComponent(slug))
     .then(function (r) { if (r.status === 404) throw { handled: true }; if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
-    .then(function (data) { state.data = data; initDefaults(); applyBrand(data); render(); })
+    .then(function (data) {
+      state.data = data; initDefaults(); applyBrand(data);
+      // Retour depuis la page carte Mastercard (returnUrl ...?tx=) : on saute directement au suivi.
+      var rtx = returnTxId();
+      if (rtx) { state.payment = { transactionId: rtx, reference: '' }; state.paying = true; state.step = LAST_STEP; render(); poll(); }
+      else render();
+    })
     .catch(function (e) {
       if (e && e.handled) renderError('Page de paiement introuvable', 'Ce lien n’existe pas ou n’est plus actif.');
       else renderError('Service indisponible', 'Réessayez dans un instant.');
@@ -76,10 +101,10 @@
   }
 
   function applyBrand(d) {
-    merchantEl.textContent = d.merchant.name || 'FirstStudioPay';
+    merchantEl.textContent = d.merchant.name || 'Cash collect First';
     if (d.merchant.brandColor) document.documentElement.style.setProperty('--fp', d.merchant.brandColor);
     if (d.merchant.logoUrl) { logoEl.innerHTML = ''; var img = document.createElement('img'); img.src = d.merchant.logoUrl; img.alt = ''; logoEl.appendChild(img); }
-    else logoEl.textContent = (d.merchant.shortCode || 'FSP').slice(0, 4).toUpperCase();
+    else logoEl.textContent = (d.merchant.shortCode || 'CCF').slice(0, 4).toUpperCase();
     document.title = 'Payer · ' + (d.name || d.merchant.name);
   }
 
@@ -87,8 +112,84 @@
     if (f.readonly) return 'Auto-rempli';
     if (f.type === 'select') return 'Choisir…';
     if (f.type === 'date') return 'JJ/MM/AAAA';
-    if (f.type === 'phone') return '+237 6XX XX XX XX';
+    if (f.type === 'phone') return phonePlaceholder();
+    if (f.type === 'matricule') return 'Saisir votre matricule…';
     return 'Saisir…';
+  }
+
+  /* --------------------------- auto-remplissage par matricule --------------------------- */
+  function matriculeField() {
+    return (state.data && state.data.customFields || []).filter(function (f) { return f.type === 'matricule'; })[0] || null;
+  }
+
+  /** État affiché sous le champ matricule (aide / recherche / vérifié / erreur). */
+  function matStatusHtml() {
+    if (state.matriculeLoading) return '<span class="mat-loading">Recherche en cours…</span>';
+    if (state.matriculeError) return '<span class="mat-err">' + esc(state.matriculeError) + '</span>';
+    if (state.matriculeVerified) return '<span class="mat-ok">✓ Informations récupérées. Vérifiez-les avant de continuer.</span>';
+    return '<span class="mat-hint">Saisissez votre matricule pour récupérer automatiquement vos informations.</span>';
+  }
+  function updateMatStatus() {
+    var el = document.getElementById('matStatus');
+    if (el) el.innerHTML = matStatusHtml();
+  }
+
+  /** Réinitialise la vérification et déclenche une recherche (debounce) à chaque saisie. */
+  function scheduleLookup(matricule) {
+    state.matriculeVerified = false;
+    state.matriculeError = '';
+    clearAutoFilled();
+    updateMatStatus();
+    if (matTimer) { clearTimeout(matTimer); matTimer = null; }
+    var q = (matricule || '').trim();
+    if (!q) return;
+    matTimer = setTimeout(function () { doLookup(q); }, 500);
+  }
+
+  function doLookup(matricule) {
+    state.matriculeLoading = true; state.matriculeError = '';
+    updateMatStatus();
+    fetch('/public/p/' + encodeURIComponent(shortCode) + '/' + encodeURIComponent(slug) + '/lookup?matricule=' + encodeURIComponent(matricule))
+      .then(function (r) { return r.ok ? r.json() : { found: false, fields: {} }; })
+      .then(function (res) {
+        state.matriculeLoading = false;
+        // La saisie a changé entre-temps : on ignore une réponse obsolète.
+        var mf = matriculeField();
+        if (mf && (state.fields[mf.id] || '').trim() !== matricule) return;
+        if (res && res.found) {
+          state.matriculeVerified = true; state.matriculeError = '';
+          applyAutoFill(res.fields || {});
+        } else {
+          state.matriculeVerified = false;
+          state.matriculeError = 'Matricule introuvable dans les données de l’établissement. Vérifiez votre saisie.';
+          clearAutoFilled();
+        }
+        updateMatStatus();
+      })
+      .catch(function () {
+        state.matriculeLoading = false; state.matriculeVerified = false;
+        state.matriculeError = 'Vérification indisponible pour le moment. Réessayez.';
+        updateMatStatus();
+      });
+  }
+
+  /** Remplit les champs (id -> valeur) et met à jour les inputs correspondants en place. */
+  function applyAutoFill(fields) {
+    clearAutoFilled();
+    Object.keys(fields).forEach(function (id) {
+      state.fields[id] = fields[id];
+      state.autoFilled[id] = true;
+      var el = bodyEl.querySelector('[data-fid="' + id + '"]');
+      if (el) el.value = fields[id];
+    });
+  }
+  function clearAutoFilled() {
+    Object.keys(state.autoFilled || {}).forEach(function (id) {
+      delete state.fields[id];
+      var el = bodyEl.querySelector('[data-fid="' + id + '"]');
+      if (el) el.value = '';
+    });
+    state.autoFilled = {};
   }
 
   /* --------------------------- rendu global --------------------------- */
@@ -98,13 +199,13 @@
 
     // Titre + description (visibles sur les écrans de saisie)
     h += '<div class="iname">' + esc(d.name || '') + '</div>';
-    if (d.description && state.step < 4) h += '<div class="idesc">' + esc(d.description) + '</div>';
+    if (d.description && !state.paying && !state.result) h += '<div class="idesc">' + esc(d.description) + '</div>';
 
-    // Barre de progression 5 étapes
+    // Barre de progression (2 étapes)
     h += renderSteps();
 
     // Corps de l'étape
-    if (state.result || (state.step === 4)) h += renderConfirmation();
+    if (state.result) h += renderConfirmation();
     else if (state.paying) h += renderPending();
     else {
       h += '<div class="stepbody">' + renderStep(state.step) + '</div>';
@@ -160,40 +261,40 @@
   function pulse(el) { if (window.gsap && el) window.gsap.fromTo(el, { scale: 0.96 }, { scale: 1, duration: 0.28, ease: 'back.out(2.2)' }); }
 
   function renderSteps() {
-    var cur = state.result ? 4 : state.step;
+    // Pendant l'attente / au résultat, toutes les étapes de saisie sont terminées.
+    var cur = (state.result || state.paying) ? STEP_LABELS.length : state.step;
     var h = '<div class="steps">';
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < STEP_LABELS.length; i++) {
       var cls = i < cur ? 'done' : (i === cur ? 'on' : '');
       h += '<div class="stp ' + cls + '" data-step="' + i + '">'
         + '<span class="stp-dot">' + (i < cur ? '✓' : (i + 1)) + '</span>'
         + '<span class="stp-lbl">' + STEP_LABELS[i] + '</span></div>';
-      if (i < 4) h += '<span class="stp-line ' + (i < cur ? 'done' : '') + '"></span>';
+      if (i < STEP_LABELS.length - 1) h += '<span class="stp-line ' + (i < cur ? 'done' : '') + '"></span>';
     }
     return h + '</div>';
   }
 
   function renderStep(step) {
-    var d = state.data;
-    if (step === 0) return renderIdentification();
-    if (step === 1) return renderAmount();
-    if (step === 2) return renderMethods();
-    if (step === 3) return renderPay();
+    // Étape 0 « Détails » = identification + montant ; étape 1 « Paiement » = moyen + numéro/carte.
+    if (step === 0) return renderIdentification() + renderAmount();
+    if (step === 1) return renderMethods() + '<div id="payDetails">' + renderPay() + '</div>';
     return '';
   }
 
-  /* --------- Étape 0 : Identification --------- */
+  /* --------- Étape 0a : Identification --------- */
   function renderIdentification() {
     var d = state.data, h = '';
+    // Section masquée s'il n'y a aucune information à saisir (on garde l'écran épuré).
+    if (!d.customFields || d.customFields.length === 0) return '';
     h += '<div class="lbl">Vos informations</div>';
-    if (!d.customFields || d.customFields.length === 0) {
-      h += '<div class="note">Aucune information n’est demandée. Vous pouvez passer à l’étape suivante.</div>';
-      return h;
-    }
     d.customFields.forEach(function (f) {
       var val = state.fields[f.id] != null ? state.fields[f.id] : '';
       h += '<div class="field"><label>' + esc(f.label) + (f.required && !f.readonly ? ' <span class="req">*</span>' : '') + '</label>';
-      if (f.readonly) {
-        h += '<input type="text" data-fid="' + f.id + '" disabled placeholder="Auto-rempli">';
+      if (f.type === 'matricule') {
+        h += '<input type="text" data-fid="' + f.id + '" data-matricule="1" value="' + esc(val) + '" placeholder="' + fieldPlaceholder(f) + '" autocomplete="off" autocapitalize="characters">';
+        h += '<div class="mat-status" id="matStatus">' + matStatusHtml() + '</div>';
+      } else if (f.readonly) {
+        h += '<input type="text" data-fid="' + f.id + '" value="' + esc(val) + '" disabled placeholder="Auto-rempli">';
       } else if (f.type === 'select') {
         h += '<select data-fid="' + f.id + '"><option value="">Choisir…</option>';
         (f.options || []).forEach(function (o) { h += '<option value="' + esc(o) + '"' + (o === val ? ' selected' : '') + '>' + esc(o) + '</option>'; });
@@ -207,7 +308,7 @@
     return h;
   }
 
-  /* --------- Étape 1 : Choix du montant --------- */
+  /* --------- Étape 0b : Choix du montant --------- */
   function renderAmount() {
     var d = state.data, h = '';
     if (d.amountType === 'fixed') {
@@ -251,20 +352,21 @@
     return '<span>Total' + (d.multiSelect ? ' · ' + count + ' frais' : '') + '</span><b>' + money(computeTotal()) + ' ' + d.currency + '</b>';
   }
 
-  /* --------- Étape 2 : Moyen de paiement --------- */
+  /* --------- Étape 1a : Moyen de paiement --------- */
   function renderMethods() {
     var h = '<div class="lbl">Choisissez votre moyen</div><div class="methods col" id="methods">';
     enabledMethods().forEach(function (k) {
       var on = state.method === k, brand = METHOD_BRAND[k] || '#888';
+      var icon = METHOD_ICON[k] || '<span style="background:' + brand + '18;color:' + brand + '">' + (METHOD_LABELS[k] || k).charAt(0) + '</span>';
       h += '<button class="mrow ' + (on ? 'on' : '') + '" data-m="' + k + '">'
-        + '<span class="m-ic" style="background:' + brand + '18;color:' + brand + '">' + (METHOD_LABELS[k] || k).charAt(0) + '</span>'
+        + '<span class="m-ic">' + icon + '</span>'
         + '<span class="m-name">' + (METHOD_LABELS[k] || k) + '</span>'
         + (hasQr(k) ? '<span class="m-qr">QR</span>' : '') + '</button>';
     });
     return h + '</div>';
   }
 
-  /* --------- Étape 3 : Paiement --------- */
+  /* --------- Étape 1b : Détails du paiement (numéro / carte / virement) --------- */
   function renderPay() {
     var d = state.data, h = '';
     h += '<div class="paysum"><span>Montant à payer</span><b>' + money(computeTotal()) + ' ' + d.currency + '</b></div>';
@@ -272,7 +374,7 @@
 
     if (isMM()) {
       h += '<div class="field"><label>Numéro ' + (METHOD_LABELS[state.method] || '') + ' <span class="req">*</span></label>'
-        + '<input type="tel" id="phone" inputmode="tel" value="' + esc(state.phone) + '" placeholder="+237 6XX XX XX XX"></div>';
+        + '<input type="tel" id="phone" inputmode="tel" value="' + esc(state.phone) + '" placeholder="' + phonePlaceholder() + '"></div>';
       if (hasQr(state.method)) {
         h += '<div class="qrbox"><div class="qr-ph"></div><div class="hint" style="text-align:center">Scannez avec votre application ' + (METHOD_LABELS[state.method] || '') + ' ou validez la demande reçue par téléphone.</div></div>';
       } else {
@@ -300,7 +402,7 @@
       + (state.payment ? '<div class="ref">Réf. ' + esc(state.payment.reference) + '</div>' : '') + '</div>';
   }
 
-  /* --------- Étape 4 : Confirmation --------- */
+  /* --------- Écran de résultat : Confirmation --------- */
   function renderConfirmation() {
     var tx = state.result, d = state.data;
     if (!tx) return renderPending();
@@ -323,7 +425,7 @@
 
   /* --------------------------- footer nav --------------------------- */
   function renderFooter() {
-    var last = state.step === 3;
+    var last = state.step === LAST_STEP;
     var h = '<div class="stepfoot">';
     if (state.step > 0) h += '<button class="back" id="backBtn">‹ Précédent</button>';
     else h += '<span></span>';
@@ -355,6 +457,16 @@
       el.addEventListener('input', function () { state.fields[el.getAttribute('data-fid')] = el.value; });
       el.addEventListener('change', function () { state.fields[el.getAttribute('data-fid')] = el.value; });
     });
+    // Champ matricule : recherche + auto-remplissage à la saisie / à la sortie du champ
+    var matEl = bodyEl.querySelector('[data-matricule="1"]');
+    if (matEl) {
+      matEl.addEventListener('input', function () { scheduleLookup(matEl.value); });
+      matEl.addEventListener('change', function () {
+        if (matTimer) { clearTimeout(matTimer); matTimer = null; }
+        var q = matEl.value.trim();
+        if (q && !state.matriculeVerified) doLookup(q);
+      });
+    }
     // Montant libre
     var fa = document.getElementById('freeAmount');
     if (fa) fa.addEventListener('input', function () { state.freeAmount = fa.value; });
@@ -369,16 +481,27 @@
         state.presetSel[id].custom = inp.value; updateTotal();
       });
     });
-    // Moyens : surbrillance en place + petit pop (pas de re-render complet)
+    // Moyens : surbrillance en place + re-render du panneau de détails (numéro/carte/virement),
+    // qui vit désormais sur le même écran que la liste des moyens.
     qsa('#methods .mrow').forEach(function (el) {
       el.addEventListener('click', function () {
         state.method = el.getAttribute('data-m');
         qsa('#methods .mrow').forEach(function (x) { x.classList.remove('on'); });
         el.classList.add('on');
         pulse(el);
+        var det = document.getElementById('payDetails');
+        if (det) {
+          det.innerHTML = renderPay();
+          bindPayDetails();
+          if (window.gsap) window.gsap.from(det.children, { y: 10, opacity: 0, duration: 0.28, stagger: 0.05, ease: 'power2.out' });
+        }
       });
     });
-    // Téléphone (étape paiement)
+    bindPayDetails();
+  }
+
+  /** Liaisons du panneau de détails de paiement (ré-attachées après changement de moyen). */
+  function bindPayDetails() {
     var ph = document.getElementById('phone');
     if (ph) ph.addEventListener('input', function () { state.phone = ph.value; });
   }
@@ -410,52 +533,71 @@
     bar.style.display = t > 0 ? 'flex' : 'none';
     bar.innerHTML = totalHtml();
     if (t > 0 && window.gsap) window.gsap.fromTo(bar, { scale: wasHidden ? 0.9 : 0.98, opacity: wasHidden ? 0 : 1 }, { scale: 1, opacity: 1, duration: 0.3, ease: 'back.out(1.8)' });
+    // Le montant se choisit sur l'étape 0 (bouton « Continuer ») ; on ne relibelle jamais en « Payer » ici.
     var nb = document.getElementById('nextBtn');
-    if (nb && state.step === 3) nb.textContent = 'Payer ' + money(t) + ' ' + state.data.currency;
+    if (nb && state.step === LAST_STEP) nb.textContent = 'Payer ' + money(t) + ' ' + state.data.currency;
   }
 
   /* --------------------------- navigation logique --------------------------- */
   function onNext() {
     state.error = '';
     if (!validateStep(state.step)) { render(); return; }
-    if (state.step === 3) { pay(); return; }
+    if (state.step === LAST_STEP) { pay(); return; }
     state.step++; render();
   }
 
   function validateStep(step) {
+    // Étape 0 « Détails » = identification + montant ; étape 1 « Paiement » = moyen + numéro.
+    if (step === 0) return validateIdentification() && validateAmount();
+    if (step === 1) return validateMethodAndPhone();
+    return true;
+  }
+
+  function validateIdentification() {
     var d = state.data;
-    if (step === 0) {
-      var miss = null;
-      (d.customFields || []).forEach(function (f) {
-        if (f.readonly) return;
-        var v = (state.fields[f.id] || '').trim();
-        if (f.required && !v && !miss) miss = f.label;
-      });
-      if (miss) { state.error = 'Champ requis : ' + miss; return false; }
-      return true;
-    }
-    if (step === 1) {
-      if (d.amountType === 'preset') {
-        var ids = selectedIds();
-        if (!ids.length) { state.error = 'Veuillez choisir un montant.'; return false; }
-        for (var i = 0; i < ids.length; i++) {
-          var p = presetById(ids[i]), sel = state.presetSel[ids[i]];
-          if (p && p.allowPartial && sel && sel.custom !== '' && sel.custom != null) {
-            var c = num(sel.custom);
-            if (c < num(p.minAmount)) { state.error = 'Acompte « ' + (p.label || 'frais') + ' » : minimum ' + money(p.minAmount) + ' ' + d.currency + '.'; return false; }
-            if (c > num(p.amount)) { state.error = 'Acompte « ' + (p.label || 'frais') + ' » : ne peut dépasser ' + money(p.amount) + ' ' + d.currency + '.'; return false; }
-          }
-        }
-      } else if (d.amountType === 'free') {
-        if (num(state.freeAmount) <= 0) { state.error = 'Veuillez saisir un montant.'; return false; }
+    // Matricule : doit être saisi ET vérifié (existant dans le répertoire) pour continuer.
+    var matF = matriculeField();
+    if (matF) {
+      var mv = (state.fields[matF.id] || '').trim();
+      if (!mv) { state.error = 'Veuillez saisir votre matricule.'; return false; }
+      if (state.matriculeLoading) { state.error = 'Vérification du matricule en cours…'; return false; }
+      if (!state.matriculeVerified) {
+        state.error = state.matriculeError || 'Matricule introuvable. Vérifiez votre saisie avant de continuer.';
+        return false;
       }
-      return true;
     }
-    if (step === 2) { if (!state.method) { state.error = 'Veuillez choisir un moyen de paiement.'; return false; } return true; }
-    if (step === 3) {
-      if (isMM() && state.phone.replace(/\D/g, '').length < 8) { state.error = 'Numéro de téléphone invalide.'; return false; }
-      return true;
+    var miss = null;
+    (d.customFields || []).forEach(function (f) {
+      if (f.readonly || f.type === 'matricule') return;
+      var v = (state.fields[f.id] || '').trim();
+      if (f.required && !v && !miss) miss = f.label;
+    });
+    if (miss) { state.error = 'Champ requis : ' + miss; return false; }
+    return true;
+  }
+
+  function validateAmount() {
+    var d = state.data;
+    if (d.amountType === 'preset') {
+      var ids = selectedIds();
+      if (!ids.length) { state.error = 'Veuillez choisir un montant.'; return false; }
+      for (var i = 0; i < ids.length; i++) {
+        var p = presetById(ids[i]), sel = state.presetSel[ids[i]];
+        if (p && p.allowPartial && sel && sel.custom !== '' && sel.custom != null) {
+          var c = num(sel.custom);
+          if (c < num(p.minAmount)) { state.error = 'Acompte « ' + (p.label || 'frais') + ' » : minimum ' + money(p.minAmount) + ' ' + d.currency + '.'; return false; }
+          if (c > num(p.amount)) { state.error = 'Acompte « ' + (p.label || 'frais') + ' » : ne peut dépasser ' + money(p.amount) + ' ' + d.currency + '.'; return false; }
+        }
+      }
+    } else if (d.amountType === 'free') {
+      if (num(state.freeAmount) <= 0) { state.error = 'Veuillez saisir un montant.'; return false; }
     }
+    return true;
+  }
+
+  function validateMethodAndPhone() {
+    if (!state.method) { state.error = 'Veuillez choisir un moyen de paiement.'; return false; }
+    if (isMM() && state.phone.replace(/\D/g, '').length < 8) { state.error = 'Numéro de téléphone invalide.'; return false; }
     return true;
   }
 
@@ -477,18 +619,70 @@
     (d.customFields || []).forEach(function (f) { if (f.readonly) return; var v = (state.fields[f.id] || '').trim(); if (v) payload.fields[f.id] = v; });
     if (isMM()) payload.phone = state.phone.trim();
 
-    state.paying = true; state.step = 4; render();
+    state.paying = true; state.step = LAST_STEP; render();
 
     fetch('/public/p/' + encodeURIComponent(shortCode) + '/' + encodeURIComponent(slug) + '/pay', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
     })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (res) {
-        if (!res.ok) { state.paying = false; state.step = 3; state.error = (res.j && res.j.message) ? res.j.message : 'Le paiement a été refusé.'; render(); return; }
-        state.payment = res.j; render(); poll();
+        if (!res.ok) { state.paying = false; state.step = LAST_STEP; state.error = (res.j && res.j.message) ? res.j.message : 'Le paiement a été refusé.'; render(); return; }
+        state.payment = res.j; render();
+        // Carte : on tente le Hosted Checkout MPGS ; sinon repli sur le suivi standard.
+        if (state.method === 'card') startCardCheckout(); else poll();
       })
-      .catch(function () { state.paying = false; state.step = 3; state.error = 'Erreur réseau. Réessayez.'; render(); });
+      .catch(function () { state.paying = false; state.step = LAST_STEP; state.error = 'Erreur réseau. Réessayez.'; render(); });
   }
+
+  /* --------------------------- Hosted Checkout carte (MPGS) --------------------------- */
+  function returnTxId() { try { return new URLSearchParams(window.location.search).get('tx'); } catch (e) { return null; } }
+
+  /**
+   * Demande une session MPGS au serveur puis lance la page de paiement Mastercard hébergée.
+   * 409 (passerelle non configurée) ou toute erreur → repli sur le suivi standard (simulation/PSP).
+   */
+  function startCardCheckout() {
+    fetch('/public/checkout/mpgs/session', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transactionId: state.payment.transactionId, shortCode: shortCode, slug: slug })
+    })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (sess) {
+        if (!sess || !sess.sessionId || !sess.checkoutJsUrl) { poll(); return; }
+        launchMpgs(sess);
+      })
+      .catch(function () { poll(); }); // MPGS indisponible → on suit la transaction telle quelle
+  }
+
+  function launchMpgs(sess) {
+    loadMpgsScript(sess.checkoutJsUrl, function () {
+      if (!window.Checkout) { poll(); return; }
+      try {
+        window.Checkout.configure({ session: { id: sess.sessionId } });
+        window.Checkout.showPaymentPage(); // redirige vers la page sécurisée Mastercard
+      } catch (e) { poll(); }
+    }, function () {
+      // Échec de chargement du script : on ne bloque pas le payeur, on suit la transaction.
+      poll();
+    });
+  }
+
+  function loadMpgsScript(url, onload, onerror) {
+    var existing = document.getElementById('mpgs-checkout-js');
+    if (existing) { onload(); return; }
+    var s = document.createElement('script');
+    s.id = 'mpgs-checkout-js';
+    s.src = url;
+    s.setAttribute('data-error', 'mpgsError');
+    s.setAttribute('data-cancel', 'mpgsCancel');
+    s.onload = onload;
+    s.onerror = onerror;
+    document.head.appendChild(s);
+  }
+
+  // Callbacks référencés par le script MPGS (data-error / data-cancel).
+  window.mpgsError = function (err) { try { console.error('MPGS', JSON.stringify(err)); } catch (e) {} };
+  window.mpgsCancel = function () { state.paying = false; state.step = LAST_STEP; state.error = 'Paiement carte annulé.'; render(); };
 
   function poll() {
     var tries = 0;
@@ -506,7 +700,7 @@
 
   /* --------------------------- erreurs / utils --------------------------- */
   function renderError(title, sub) {
-    merchantEl.textContent = 'FirstStudioPay';
+    merchantEl.textContent = 'Cash collect First';
     bodyEl.innerHTML = '<div class="center"><div class="ico ko">!</div><div class="rtitle">' + esc(title) + '</div><div class="rsub">' + esc(sub) + '</div></div>';
   }
   function qsa(sel) { return Array.prototype.slice.call(bodyEl.querySelectorAll(sel)); }

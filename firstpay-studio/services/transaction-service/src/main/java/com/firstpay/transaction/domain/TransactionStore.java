@@ -25,8 +25,8 @@ public class TransactionStore {
     public Mono<Transaction> insert(Transaction t) {
         DatabaseClient.GenericExecuteSpec spec = db.sql("""
                 INSERT INTO transactions
-                  (id, tenant_id, interface_id, external_ref, amount, currency, status, type, method, idempotency_key, created_at)
-                VALUES (:id, :tenant, :iface, :ref, :amount, :currency, :status, :type, :method, :idem, :createdAt)
+                  (id, tenant_id, interface_id, external_ref, amount, currency, status, type, method, idempotency_key, metadata, created_at)
+                VALUES (:id, :tenant, :iface, :ref, :amount, :currency, :status, :type, :method, :idem, :metadata::jsonb, :createdAt)
                 """)
             .bind("id", t.getId())
             .bind("tenant", t.getTenantId())
@@ -39,6 +39,8 @@ public class TransactionStore {
             .bind("createdAt", t.getCreatedAt());
         spec = t.getInterfaceId() != null ? spec.bind("iface", t.getInterfaceId()) : spec.bindNull("iface", UUID.class);
         spec = t.getMethod() != null ? spec.bind("method", t.getMethod()) : spec.bindNull("method", String.class);
+        String metadataJson = serializeMetadata(t.getMetadata());
+        spec = metadataJson != null ? spec.bind("metadata", metadataJson) : spec.bindNull("metadata", String.class);
         return spec.fetch().rowsUpdated().thenReturn(t);
     }
 
@@ -90,6 +92,16 @@ public class TransactionStore {
     }
 
     private static long num(Object v) { return v == null ? 0 : ((Number) v).longValue(); }
+
+    /** Sérialise les métadonnées en JSON pour la colonne jsonb ; null si absentes/vides. */
+    private static String serializeMetadata(java.util.Map<String, Object> metadata) {
+        if (metadata == null || metadata.isEmpty()) return null;
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(metadata);
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     @SuppressWarnings("unchecked")
     private static java.util.Map<String, Object> parseMetadata(Object raw) {

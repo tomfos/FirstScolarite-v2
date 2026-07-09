@@ -52,4 +52,27 @@ public class WebClientConfig {
             .clientConnector(new ReactorClientHttpConnector(httpClient()))
             .build();
     }
+
+    /** Client MPGS (Mastercard) : URL absolue par appel, gros buffer pour les réponses order détaillées. */
+    @Bean
+    @Qualifier("mpgs")
+    WebClient mpgsWebClient() {
+        return WebClient.builder()
+            .clientConnector(new ReactorClientHttpConnector(httpClient()))
+            .codecs(c -> c.defaultCodecs().maxInMemorySize(512 * 1024))
+            .build();
+    }
+
+    /**
+     * Client vers transaction-service (server-to-server, hors gateway). Sert au Hosted Checkout MPGS
+     * à relire le montant/tenant faisant autorité d'une transaction avant de créer la session.
+     */
+    @Bean
+    @Qualifier("transaction")
+    WebClient transactionWebClient(@Value("${firstpay.transaction-service-uri:http://localhost:8080}") String baseUrl) {
+        return WebClient.builder()
+            .baseUrl(baseUrl)
+            .clientConnector(new ReactorClientHttpConnector(httpClient()))
+            .build();
+    }
 }

@@ -2,11 +2,22 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <title>Studio de paiement — FirstStudioPay</title>
+  <title>Cash collect First — Studio de paiement</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Anti-FOUC : applique le thème avant le premier rendu pour éviter un flash clair au chargement. -->
+  <script>
+    (function () {
+      try {
+        var pref = localStorage.getItem('fp_theme') || 'system';
+        var dark = pref === 'dark' ||
+          (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      } catch (e) { /* stockage indisponible → thème clair par défaut */ }
+    })();
+  </script>
 </head>
 <body>
   <fp-root></fp-root>

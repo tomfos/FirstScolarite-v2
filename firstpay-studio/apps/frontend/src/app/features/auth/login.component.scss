@@ -1,9 +1,20 @@
 .page { display: grid; grid-template-columns: 1.1fr 1fr; min-height: 100vh; }
 
 .brand-panel {
-  background: #1A1D21; color: #fff; padding: 56px 64px;
+  position: relative; overflow: hidden;
+  color: #fff; padding: 56px 64px;
   display: flex; flex-direction: column; justify-content: space-between;
+  background:
+    linear-gradient(155deg, rgba(20,22,26,.92) 0%, rgba(26,29,33,.72) 42%, rgba(198,40,40,.42) 100%),
+    url('/assets/login-bg.jpg')
+      center / cover no-repeat;
 }
+/* Voile supplémentaire en bas pour garantir le contraste du copyright */
+.brand-panel::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, transparent 55%, rgba(15,16,19,.65) 100%);
+}
+.brand-panel > * { position: relative; z-index: 1; }
 .brand-top { display: flex; align-items: center; gap: 14px; }
 .logo {
   width: 56px; height: 56px; border-radius: 14px;
@@ -11,12 +22,12 @@
   display: grid; place-items: center; font-weight: 800; font-size: 22px;
   box-shadow: 0 10px 24px -8px rgba(229,57,53,.55);
 }
-.bname { font-weight: 800; font-size: 22px; letter-spacing: .02em; }
-.bsub { font-size: 12px; color: #B8B5AC; }
-.eyebrow { font-size: 13px; font-weight: 700; color: #FF8784; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 18px; }
-h1 { font-size: 44px; font-weight: 700; line-height: 1.05; letter-spacing: -.02em; margin-bottom: 18px; }
-.brand-panel p { font-size: 16px; color: #B8B5AC; line-height: 1.55; max-width: 420px; }
-.copyright { color: #74716A; font-size: 12px; }
+.bname { font-weight: 800; font-size: 22px; letter-spacing: .02em; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+.bsub { font-size: 12px; color: #E4E1DA; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+.eyebrow { font-size: 13px; font-weight: 700; color: #FFB3B0; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 18px; text-shadow: 0 1px 3px rgba(0,0,0,.55); }
+h1 { font-size: 44px; font-weight: 700; line-height: 1.05; letter-spacing: -.02em; margin-bottom: 18px; text-shadow: 0 2px 8px rgba(0,0,0,.55); }
+.brand-panel p { font-size: 16px; color: #EDEBE6; line-height: 1.55; max-width: 420px; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
+.copyright { color: #C9C6BF; font-size: 12px; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
 
 .form-panel { display: flex; flex-direction: column; justify-content: center; padding: 56px 64px; background: var(--bg); }
 .form-panel h2 { font-size: 24px; font-weight: 700; }
@@ -26,7 +37,7 @@ h1 { font-size: 44px; font-weight: 700; line-height: 1.05; letter-spacing: -.02e
 .accounts { display: flex; flex-direction: column; gap: 10px; max-width: 440px; }
 .account {
   display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px;
-  background: #fff; border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
   padding: 14px 16px; text-align: left; box-shadow: var(--shadow-sm);
   transition: border-color .12s, box-shadow .12s;
 }
@@ -41,7 +52,7 @@ h1 { font-size: 44px; font-weight: 700; line-height: 1.05; letter-spacing: -.02e
 .login-form { display: flex; flex-direction: column; gap: 12px; max-width: 440px; margin-bottom: 18px; }
 .login-form .fld { display: block; }
 .login-form .fld > span { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 6px; color: var(--text-2); }
-.login-form input { width: 100%; height: 42px; padding: 0 14px; border: 1px solid var(--border-strong); border-radius: 10px; outline: none; font-family: inherit; font-size: 14px; background: #fff; }
+.login-form input { width: 100%; height: 42px; padding: 0 14px; border: 1px solid var(--border-strong); border-radius: 10px; outline: none; font-family: inherit; font-size: 14px; background: var(--surface); }
 .login-form input:focus { border-color: var(--fp-red); box-shadow: 0 0 0 3px rgba(229,57,53,.12); }
 .submit { height: 44px; border: none; border-radius: 10px; background: var(--fp-red); color: #fff; font-weight: 700; font-size: 14px; box-shadow: 0 6px 14px -4px rgba(229,57,53,.55); margin-top: 4px; }
 .submit:disabled { opacity: .55; }

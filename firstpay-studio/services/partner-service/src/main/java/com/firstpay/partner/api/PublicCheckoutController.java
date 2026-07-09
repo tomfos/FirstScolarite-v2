@@ -4,6 +4,7 @@ import com.firstpay.partner.api.dto.Dtos.PublicCheckoutDto;
 import com.firstpay.partner.api.dto.Dtos.PublicPayRequest;
 import com.firstpay.partner.api.dto.Dtos.PublicPayResponse;
 import com.firstpay.partner.api.dto.Dtos.PublicTxStatusDto;
+import com.firstpay.partner.api.dto.Dtos.StudentLookupDto;
 import com.firstpay.partner.infra.PublicCheckoutService;
 import com.firstpay.partner.infra.PublicCheckoutStore;
 import org.springframework.http.HttpStatus;
@@ -38,6 +39,16 @@ public class PublicCheckoutController {
         return store.resolve(shortCode, slug)
             .switchIfEmpty(Mono.error(new ResponseStatusException(
                 HttpStatus.NOT_FOUND, "Page de paiement introuvable ou indisponible")));
+    }
+
+    /**
+     * Auto-remplissage : recherche un matricule dans le répertoire de l'établissement et renvoie
+     * les champs à pré-remplir. {@code found=false} => matricule inexistant (la page bloque).
+     */
+    @GetMapping("/public/p/{shortCode}/{slug}/lookup")
+    public Mono<StudentLookupDto> lookup(@PathVariable String shortCode, @PathVariable String slug,
+                                         @RequestParam String matricule) {
+        return service.lookup(shortCode, slug, matricule);
     }
 
     /** Initie le paiement (création d'une transaction PENDING côté plateforme). */

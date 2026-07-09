@@ -14,14 +14,14 @@ import { Component, Input } from '@angular/core';
         <div class="badge">{{ phase }}</div>
         <h1>{{ title }}</h1>
         <p>{{ desc }}</p>
-        <div class="note">Écran à implémenter — fidèle au prototype FirstStudioPay.</div>
+        <div class="note">Écran à implémenter — fidèle au prototype Cash collect First.</div>
       </div>
     </div>
   `,
   styles: [`
     .wrap { flex: 1; position: relative; display: grid; place-items: center; padding: 40px; }
     .card {
-      position: relative; z-index: 1; background: #fff; border: 1px solid var(--border);
+      position: relative; z-index: 1; background: var(--surface); border: 1px solid var(--border);
       border-radius: 16px; padding: 36px 40px; max-width: 560px; box-shadow: var(--shadow-md);
     }
     .badge {

@@ -1,0 +1,15 @@
+====================== PARAMETRES DE TEST ====================== 
+
+url_test: https://test-gateway.mastercard.com
+
+MERCHANT_ID = TESTAFB-MARCHANT
+PASSWORD = 7631e1802ff5c91a2a883d84e13bbd48
+
+====================== PARAMETRES DE PRODUCTION ======================
+
+url_prod: https://na-gateway.mastercard.com
+
+
+MERCHANT_ID=001020345
+Mdp1: 51c700084e136dba733fb292a5339e89
+Mdp2: a5ef1003ecfa0c54be51bb797fee6b00

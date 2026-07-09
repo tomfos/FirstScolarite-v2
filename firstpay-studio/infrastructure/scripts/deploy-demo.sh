@@ -86,7 +86,7 @@ post_info() {
   cat <<EOF
 
 ╔══════════════════════════════════════════════════════════════════╗
-║  FirstPay Studio — RECETTE (données seed)                        ║
+║  Cash collect First — RECETTE (données seed)                        ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  Frontend : http://${PUBLIC_IP:-localhost}:${DEMO_FRONTEND_PORT:-24200}
 ║  API      : http://${PUBLIC_IP:-localhost}:${DEMO_GATEWAY_PORT:-28080}

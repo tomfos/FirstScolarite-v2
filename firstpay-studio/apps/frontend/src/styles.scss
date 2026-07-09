@@ -1,10 +1,13 @@
-/* FirstStudioPay — design tokens (source de vérité : docs/UI-UX-DESIGN-SYSTEM.md) */
-:root {
+/* Cash collect First — design tokens (source de vérité : docs/UI-UX-DESIGN-SYSTEM.md) */
+:root, :root[data-theme="light"] {
+  color-scheme: light;
   --fp-red: #E53935;        --fp-red-dark: #C62828;
   --fp-red-soft: #FDECEA;   --fp-red-50: #FFF5F5;
   --bg: #F7F8FA;            --surface: #FFFFFF;
+  --surface-2: #F7F8FA;     --surface-3: #EEF0F4;
   --border: #ECEEF2;        --border-strong: #D9DDE3;
   --text: #1A1D21;          --text-2: #5A6270;   --text-3: #8A93A0;
+  --text-1: var(--text);    /* alias : texte primaire (compat composants) */
   --green: #1F9D55;         --green-soft: #E6F4EC;
   --amber: #B7791F;         --amber-soft: #FEF6E4;
   --blue: #2563EB;          --blue-soft: #E8F0FE;
@@ -12,6 +15,24 @@
   --shadow-md: 0 4px 12px -2px rgba(15,23,42,.06), 0 2px 4px -2px rgba(15,23,42,.04);
   --shadow-lg: 0 10px 30px -10px rgba(15,23,42,.12);
   --radius: 10px;
+}
+
+/* Thème sombre — surcharge les mêmes tokens. Appliqué via [data-theme="dark"] sur <html>
+   (posé par le script anti-FOUC de index.html puis piloté par ThemeService). */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --fp-red: #FF5B54;        --fp-red-dark: #FF7A74;
+  --fp-red-soft: rgba(255,91,84,.16);   --fp-red-50: rgba(255,91,84,.10);
+  --bg: #0E1116;            --surface: #171A21;
+  --surface-2: #1F232B;     --surface-3: #272C36;
+  --border: #262B34;        --border-strong: #363D48;
+  --text: #E7EAEE;          --text-2: #A5AEBC;   --text-3: #727B89;
+  --green: #4ADE80;         --green-soft: rgba(74,222,128,.14);
+  --amber: #F0B84E;         --amber-soft: rgba(240,184,78,.14);
+  --blue: #5B9CFF;          --blue-soft: rgba(91,156,255,.14);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.35);
+  --shadow-md: 0 4px 12px -2px rgba(0,0,0,.45), 0 2px 4px -2px rgba(0,0,0,.4);
+  --shadow-lg: 0 12px 34px -12px rgba(0,0,0,.6);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }

@@ -126,7 +126,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: dev
       REDIS_URL: redis://redis:6379
-      FRONTEND_ORIGIN: http://localhost:14200
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:14200}
       JWT_SECRET: ${JWT_SECRET:-firstpay-dev-secret-change-me-please-32b}
       PARTNER_SVC_URI: http://partner-service:8080
       INTERNAL_TOKEN: ${INTERNAL_TOKEN:-firstpay-dev-internal}

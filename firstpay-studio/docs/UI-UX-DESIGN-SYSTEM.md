@@ -1,6 +1,6 @@
-# Design System & Inventaire des écrans — FirstPay Studio
+# Design System & Inventaire des écrans — Cash collect First
 
-Référence fidèle extraite du prototype `FirstPay Studio (standalone).html`. Toute
+Référence fidèle extraite du prototype `Cash collect First (standalone).html`. Toute
 implémentation Angular doit respecter ces tokens et cet inventaire.
 
 ## 1. Tokens (variables CSS — source de vérité)

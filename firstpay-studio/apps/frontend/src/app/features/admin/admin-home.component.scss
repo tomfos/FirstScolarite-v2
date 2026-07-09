@@ -10,13 +10,13 @@
 .sub { font-size: 14px; color: #B8B5AC; margin-top: 4px; max-width: 540px; position: relative; }
 
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
-.pstat { padding: 16px; background: #fff; border-radius: 12px; border: 1px solid var(--border); border-top: 4px solid; box-shadow: var(--shadow-sm); }
+.pstat { padding: 16px; background: var(--surface); border-radius: 12px; border: 1px solid var(--border); border-top: 4px solid; box-shadow: var(--shadow-sm); }
 .ps-lbl { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
 .ps-val { font-size: 26px; font-weight: 700; margin-top: 4px; letter-spacing: -.01em; }
 .ps-sub { font-size: 11.5px; color: var(--text-3); }
 
 .modules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.module { padding: 22px; background: #fff; border-radius: 14px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); cursor: pointer; transition: box-shadow .15s, transform .15s; }
+.module { padding: 22px; background: var(--surface); border-radius: 14px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); cursor: pointer; transition: box-shadow .15s, transform .15s; }
 .module:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 .m-ic { width: 44px; height: 44px; border-radius: 10px; color: #fff; display: grid; place-items: center; margin-bottom: 14px; font-size: 20px; }
 .m-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }

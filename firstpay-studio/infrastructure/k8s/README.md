@@ -1,4 +1,4 @@
-# Kubernetes — FirstPay Studio
+# Kubernetes — Cash collect First
 
 > **Phase 9 livrée.** La source de vérité déployable est désormais le **chart Helm
 > paramétré** dans [`../helm/firstpay`](../helm/firstpay). Ce dossier ne garde que le

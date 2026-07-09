@@ -1,20 +1,32 @@
-# Fichier généré — éditer Caddyfile.template ou relancer deploy-production.sh
+# Généré par deploy-production.sh — ne pas éditer Caddyfile directement.
+# Template : infrastructure/caddy/Caddyfile.template
+
 {
 	email admin@afbdei.com
 }
 
-firstsign.afbdei.com {
+esign.afbdei.com {
 	encode gzip zstd
 
+	# Webhooks TrustPayWay (payment-service)
 	handle /webhooks/* {
 		reverse_proxy payment-service:8080
 	}
 
+	# API REST (gateway)
 	handle /api/* {
 		reverse_proxy api-gateway:8080
 	}
 
+	# Application Angular (nginx)
 	handle {
 		reverse_proxy frontend:80
 	}
+}
+
+# DigitalCard (vcard) — projet /opt/DigitalCardApp_afb, gateway publiée en HTTP sur le host.
+# Bloc statique (non substitué par envsubst) : survit aux redéploiements firstpay.
+afbvcard.afbdei.com {
+	encode gzip zstd
+	reverse_proxy 62.169.26.178:8766
 }

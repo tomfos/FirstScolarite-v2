@@ -1,7 +1,7 @@
 {
   "name": "firstpay-studio-frontend",
   "version": "1.0.0",
-  "description": "FirstPay Studio — portail Angular 21 (standalone, Signals, NgRx Signal Store)",
+  "description": "Cash collect First — portail Angular 21 (standalone, Signals, NgRx Signal Store)",
   "scripts": {
     "start": "ng serve",
     "build": "ng build",

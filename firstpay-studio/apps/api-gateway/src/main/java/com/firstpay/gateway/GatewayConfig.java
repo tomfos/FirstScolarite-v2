@@ -24,6 +24,10 @@ public class GatewayConfig {
                 .uri("lb://partner-service"))
             .route("payment-webhooks", r -> r.path("/webhooks/**")
                 .uri("lb://payment-service"))
+            // Route publique : Hosted Checkout carte MPGS (création de session + retour Mastercard).
+            // DOIT précéder /public/** (plus spécifique) car cette portion va au payment-service.
+            .route("public-mpgs-checkout", r -> r.path("/public/checkout/**")
+                .uri("lb://payment-service"))
             // Route publique : page payeur (lien/QR partagé) — résolution shortCode/slug,
             // sans filtre tenant/API-key (le client final n'est pas authentifié).
             .route("public-checkout", r -> r.path("/public/**")
@@ -37,7 +41,8 @@ public class GatewayConfig {
                 .uri("lb://transaction-service"))
             .route("partner-service", r -> r.path(
                     "/api/v1/interfaces/**", "/api/v1/partners/**",
-                    "/api/v1/users/**", "/api/v1/settings/**", "/api/v1/audit/**")
+                    "/api/v1/users/**", "/api/v1/settings/**", "/api/v1/audit/**",
+                    "/api/v1/roster/**")
                 .filters(f -> f.filter(tenantFilter).filter(rateLimitFilter))
                 .uri("lb://partner-service"))
             .route("reporting-service", r -> r.path("/api/v1/reports/**")

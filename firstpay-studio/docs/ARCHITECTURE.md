@@ -1,4 +1,4 @@
-# Architecture — FirstPay Studio (cible 1M+ tx/min)
+# Architecture — Cash collect First (cible 1M+ tx/min)
 
 ## 1. Objectifs & SLO
 

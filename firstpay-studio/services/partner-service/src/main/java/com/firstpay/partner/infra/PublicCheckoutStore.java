@@ -42,15 +42,16 @@ public class PublicCheckoutStore {
      * Vue interne (tenantId inclus) — NE JAMAIS sérialiser telle quelle vers le client public.
      */
     public record Resolved(
-        UUID tenantId, String interfaceId, String name, String description, String sector, String slug,
+        UUID tenantId, String interfaceId, String name, String description, String sector, String country, String slug,
         String amountType, String fixedAmount, String minAmount, String maxAmount, String currency,
         List<PresetDto> presets, boolean multiSelect, String refType, String refLabel, String refFormat,
-        List<InterfaceFieldDto> customFields, Map<String, Boolean> methods, PublicMerchantDto merchant
+        List<InterfaceFieldDto> customFields, Map<String, Boolean> methods, PublicMerchantDto merchant,
+        String establishment
     ) {
         /** Projection public-safe (retire le tenantId). */
         public PublicCheckoutDto toPublic() {
             return new PublicCheckoutDto(
-                interfaceId, name, description, sector, slug,
+                interfaceId, name, description, sector, country, slug,
                 amountType, fixedAmount, minAmount, maxAmount, currency,
                 presets, multiSelect, refType, refLabel, refFormat,
                 customFields, methods, merchant);
@@ -67,9 +68,10 @@ public class PublicCheckoutStore {
             return Mono.empty();
         }
         return db.sql("""
-                SELECT pi.id, pi.tenant_id, pi.name, pi.description, pi.sector, pi.slug,
+                SELECT pi.id, pi.tenant_id, pi.name, pi.description, pi.sector, pi.country, pi.slug,
                        pi.amount_type, pi.fixed_amount, pi.min_amount, pi.max_amount, pi.currency,
                        pi.presets, pi.multi_select, pi.ref_type, pi.ref_label, pi.ref_format, pi.methods,
+                       pi.establishment,
                        t.name AS partner_name, t.config->>'shortCode' AS short_code,
                        ps.logo_url AS logo_url, ps.brand_color AS brand_color
                 FROM payment_interfaces pi
@@ -101,6 +103,7 @@ public class PublicCheckoutStore {
             r.get("name", String.class),
             r.get("description", String.class),
             r.get("sector", String.class),
+            r.get("country", String.class) != null ? r.get("country", String.class) : "CM",
             r.get("slug", String.class),
             r.get("amount_type", String.class),
             numStr(r.get("fixed_amount", BigDecimal.class)),
@@ -114,7 +117,8 @@ public class PublicCheckoutStore {
             r.get("ref_format", String.class),
             List.of(),
             parseBoolMap(r.get("methods", String.class)),
-            merchant
+            merchant,
+            r.get("establishment", String.class) != null ? r.get("establishment", String.class) : ""
         );
     }
 
@@ -133,10 +137,10 @@ public class PublicCheckoutStore {
             .all()
             .collectList()
             .map(fields -> new Resolved(
-                base.tenantId(), base.interfaceId(), base.name(), base.description(), base.sector(), base.slug(),
+                base.tenantId(), base.interfaceId(), base.name(), base.description(), base.sector(), base.country(), base.slug(),
                 base.amountType(), base.fixedAmount(), base.minAmount(), base.maxAmount(), base.currency(),
                 base.presets(), base.multiSelect(), base.refType(), base.refLabel(), base.refFormat(),
-                fields, base.methods(), base.merchant()
+                fields, base.methods(), base.merchant(), base.establishment()
             ));
     }
 

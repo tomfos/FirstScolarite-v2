@@ -2,7 +2,7 @@
   "annotations": { "list": [] },
   "editable": true,
   "schemaVersion": 39,
-  "title": "FirstPay Studio — Overview",
+  "title": "Cash collect First — Overview",
   "uid": "firstpay-overview",
   "tags": ["firstpay", "slo"],
   "time": { "from": "now-1h", "to": "now" },

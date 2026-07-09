@@ -3,7 +3,7 @@
 
 .hero {
   padding: 30px 36px; border-radius: 18px; margin-bottom: 24px;
-  background: linear-gradient(135deg, #fff 0%, #FFF5F5 100%);
+  background: linear-gradient(135deg, var(--surface) 0%, var(--fp-red-50) 100%);
   border: 1px solid var(--border); box-shadow: var(--shadow-sm);
   display: flex; align-items: center; justify-content: space-between; gap: 24px;
 }
@@ -12,10 +12,10 @@
 .sub { font-size: 14px; color: var(--text-2); margin-top: 4px; }
 .hero-actions { display: flex; gap: 10px; }
 .btn-primary { padding: 10px 16px; border-radius: 9px; border: none; background: var(--fp-red); color: #fff; font-weight: 700; font-size: 13px; box-shadow: 0 6px 14px -4px rgba(229,57,53,.55); }
-.btn-ghost { padding: 10px 16px; border-radius: 9px; border: 1px solid var(--border-strong); background: #fff; color: var(--text-2); font-weight: 600; font-size: 13px; }
+.btn-ghost { padding: 10px 16px; border-radius: 9px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); font-weight: 600; font-size: 13px; }
 
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
-.stat-card { padding: 16px; background: #fff; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); display: flex; gap: 14px; align-items: center; }
+.stat-card { padding: 16px; background: var(--surface); border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); display: flex; gap: 14px; align-items: center; }
 .stat-card .ic { width: 42px; height: 42px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; font-size: 20px; }
 .lbl { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
 .val { font-size: 22px; font-weight: 700; margin-top: 2px; letter-spacing: -.01em; }
@@ -23,7 +23,7 @@
 
 .section-title { font-size: 12px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
 .modules { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 26px; }
-.module { background: #fff; border-radius: 14px; border: 1px solid var(--border); padding: 22px; cursor: pointer; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; transition: box-shadow .15s, transform .15s; }
+.module { background: var(--surface); border-radius: 14px; border: 1px solid var(--border); padding: 22px; cursor: pointer; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; transition: box-shadow .15s, transform .15s; }
 .module:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 .blob { position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; border-radius: 99px; }
 .module-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; position: relative; }
@@ -35,7 +35,7 @@
 .module-cta { font-weight: 700; font-size: 13px; position: relative; }
 
 .two-col { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; }
-.panel { background: #fff; border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); overflow: hidden; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); overflow: hidden; }
 .panel-head { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; }
 .panel-link { border: none; background: transparent; color: var(--fp-red); font-weight: 600; font-size: 12px; }
 

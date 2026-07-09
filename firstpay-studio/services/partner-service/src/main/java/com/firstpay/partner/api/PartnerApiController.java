@@ -117,10 +117,10 @@ public class PartnerApiController {
             @PathVariable UUID id,
             @Valid @RequestBody SaveInterfaceRequest req) {
         SaveInterfaceRequest withId = new SaveInterfaceRequest(
-            id.toString(), req.name(), req.description(), req.sector(), req.customSlug(),
+            id.toString(), req.name(), req.description(), req.sector(), req.country(), req.customSlug(),
             req.status(), req.amountType(), req.fixedAmount(), req.minAmount(), req.maxAmount(),
             req.currency(), req.presets(), req.multiSelect(), req.refType(), req.refLabel(),
-            req.refFormat(), req.customFields(), req.methods(), req.qrCodes()
+            req.refFormat(), req.customFields(), req.methods(), req.qrCodes(), req.establishment()
         );
         return interfaces.upsert(tenantId, withId);
     }

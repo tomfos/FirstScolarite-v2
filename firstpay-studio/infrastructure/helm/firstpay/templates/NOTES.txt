@@ -1,4 +1,4 @@
-FirstPay Studio deploye dans le namespace "{{ .Values.global.namespace }}" (env: {{ .Values.global.environment }}).
+Cash collect First deploye dans le namespace "{{ .Values.global.namespace }}" (env: {{ .Values.global.environment }}).
 
 Services rendus :
 {{- range $svc := .Values.services }}

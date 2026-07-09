@@ -24,17 +24,23 @@ class PublicCheckoutServiceTest {
 
     private final PublicCheckoutStore store = mock(PublicCheckoutStore.class);
     private final TransactionClient transactions = mock(TransactionClient.class);
-    private final PublicCheckoutService service = new PublicCheckoutService(store, transactions);
+    private final RosterStore roster = mock(RosterStore.class);
+    private final PublicCheckoutService service = new PublicCheckoutService(store, transactions, roster);
 
     private static final UUID TENANT = UUID.randomUUID();
 
     private PublicCheckoutStore.Resolved presetInterface(boolean multiSelect, List<PresetDto> presets) {
+        return interfaceWith(multiSelect, presets, List.of(), "");
+    }
+
+    private PublicCheckoutStore.Resolved interfaceWith(boolean multiSelect, List<PresetDto> presets,
+                                                       List<InterfaceFieldDto> fields, String establishment) {
         return new PublicCheckoutStore.Resolved(
-            TENANT, "iface-1", "Frais", "", "Éducation", "frais",
+            TENANT, "iface-1", "Frais", "", "Éducation", "CM", "frais",
             "preset", "", "", "", "XAF",
             presets, multiSelect, "auto", "", "any",
-            List.of(), Map.of("orange", true, "mtn", true, "card", false, "transfer", false),
-            new PublicMerchantDto("SOFT", "SOFT", null, "#E53935"));
+            fields, Map.of("orange", true, "mtn", true, "card", false, "transfer", false),
+            new PublicMerchantDto("SOFT", "SOFT", null, "#E53935"), establishment);
     }
 
     /** Capture le montant transmis à la transaction-service lors d'un initiate réussi. */
@@ -104,5 +110,77 @@ class PublicCheckoutServiceTest {
         StepVerifier.create(service.initiate("SOFT", "frais", req(null, List.of(), null)))
             .expectError(ResponseStatusException.class)
             .verify();
+    }
+
+    /* ------------------------ matricule : auto-remplissage ------------------------ */
+
+    private static final InterfaceFieldDto MATRICULE =
+        new InterfaceFieldDto("f-mat", "matricule", "Matricule", true, false, List.of());
+    private static final InterfaceFieldDto NOM =
+        new InterfaceFieldDto("f-nom", "text", "Nom", false, true, List.of());
+
+    private PublicPayRequest payWithMatricule(String matricule) {
+        return new PublicPayRequest("orange", null, "+237699112233", "Marie", 1L, null, null,
+            Map.of("f-mat", matricule));
+    }
+
+    @Test
+    void lookup_found_returnsFieldsKeyedByFieldId() {
+        var it = interfaceWith(false, List.of(), List.of(MATRICULE, NOM), "");
+        when(store.resolveInternal(anyString(), anyString())).thenReturn(Mono.just(it));
+        when(roster.findByMatricule(eq(TENANT), eq(""), eq("M001")))
+            .thenReturn(Mono.just(Map.of("nom", "DUPONT", "classe", "6e")));
+
+        StepVerifier.create(service.lookup("SOFT", "frais", "M001"))
+            .expectNextMatches(dto -> dto.found() && "DUPONT".equals(dto.fields().get("f-nom"))
+                // le champ « classe » n'existe pas sur l'interface -> non exposé
+                && !dto.fields().containsKey("classe"))
+            .verifyComplete();
+    }
+
+    @Test
+    void lookup_unknownMatricule_returnsNotFound() {
+        var it = interfaceWith(false, List.of(), List.of(MATRICULE, NOM), "");
+        when(store.resolveInternal(anyString(), anyString())).thenReturn(Mono.just(it));
+        when(roster.findByMatricule(eq(TENANT), eq(""), eq("ZZZ"))).thenReturn(Mono.empty());
+
+        StepVerifier.create(service.lookup("SOFT", "frais", "ZZZ"))
+            .expectNextMatches(dto -> !dto.found() && dto.fields().isEmpty())
+            .verifyComplete();
+    }
+
+    @Test
+    void initiate_unknownMatricule_isRejectedBeforeTransaction() {
+        var it = interfaceWith(false, List.of(new PresetDto(1, "Inscription", "25000", false, "")),
+            List.of(MATRICULE, NOM), "");
+        when(store.resolveInternal(anyString(), anyString())).thenReturn(Mono.just(it));
+        when(roster.findByMatricule(eq(TENANT), eq(""), eq("ZZZ"))).thenReturn(Mono.empty());
+
+        StepVerifier.create(service.initiate("SOFT", "frais", payWithMatricule("ZZZ")))
+            .expectErrorMatches(e -> e instanceof ResponseStatusException
+                && ((ResponseStatusException) e).getReason().contains("introuvable"))
+            .verify();
+        verify(transactions, never()).createTransaction(any(), anyString(), anyString(), any(), anyString(), anyString(), anyMap());
+    }
+
+    @Test
+    void initiate_knownMatricule_enrichesFieldsAndCharges() {
+        var it = interfaceWith(false, List.of(new PresetDto(1, "Inscription", "25000", false, "")),
+            List.of(MATRICULE, NOM), "");
+        when(store.resolveInternal(anyString(), anyString())).thenReturn(Mono.just(it));
+        when(roster.findByMatricule(eq(TENANT), eq(""), eq("M001")))
+            .thenReturn(Mono.just(Map.of("nom", "DUPONT")));
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> md = ArgumentCaptor.forClass(Map.class);
+        when(transactions.createTransaction(any(), anyString(), anyString(), any(),
+            anyString(), anyString(), md.capture())).thenReturn(Mono.just("tx-1"));
+
+        StepVerifier.create(service.initiate("SOFT", "frais", payWithMatricule("M001")))
+            .expectNextMatches(r -> "PENDING".equals(r.status()))
+            .verifyComplete();
+
+        @SuppressWarnings("unchecked")
+        Map<String, String> fields = (Map<String, String>) md.getValue().get("fields");
+        assertThat(fields).containsEntry("f-nom", "DUPONT");
     }
 }

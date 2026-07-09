@@ -1,4 +1,4 @@
-# FirstPay Studio — Frontend (Angular 21)
+# Cash collect First — Frontend (Angular 21)
 
 Portail standalone, Signals, routing par rôle. Design system fidèle au prototype
 (`docs/UI-UX-DESIGN-SYSTEM.md`).

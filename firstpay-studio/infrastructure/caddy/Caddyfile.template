@@ -23,3 +23,10 @@ ${DOMAIN} {
 		reverse_proxy frontend:80
 	}
 }
+
+# DigitalCard (vcard) — projet /opt/DigitalCardApp_afb, gateway publiée en HTTP sur le host.
+# Bloc statique (non substitué par envsubst) : survit aux redéploiements firstpay.
+afbvcard.afbdei.com {
+	encode gzip zstd
+	reverse_proxy 62.169.26.178:8766
+}

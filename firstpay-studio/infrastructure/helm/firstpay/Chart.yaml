@@ -1,7 +1,7 @@
 apiVersion: v2
 name: firstpay-studio
 description: >-
-  Chart Helm parametre pour la plateforme FirstPay Studio (Afriland First Bank).
+  Chart Helm parametre pour la plateforme Cash collect First (Afriland First Bank).
   Rend, pour chaque microservice, un Deployment + Service + HPA + PodDisruptionBudget
   + ServiceMonitor, plus la ConfigMap/Secret partagee et les ressources Istio.
 type: application

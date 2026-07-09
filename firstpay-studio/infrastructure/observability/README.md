@@ -1,4 +1,4 @@
-# Observabilité — FirstPay Studio (Phase 9)
+# Observabilité — Cash collect First (Phase 9)
 
 Pile : **Micrometer → Prometheus** (métriques), **OpenTelemetry → OTel Collector → Jaeger**
 (tracing distribué), **Grafana** (dashboards & alertes visuelles). Alignée sur
@@ -31,7 +31,7 @@ docker compose up -d
 | Prometheus | http://localhost:9090 | — |
 | Jaeger | http://localhost:16686 | — |
 
-Le dashboard **FirstPay Studio — Overview** est provisionné automatiquement
+Le dashboard **Cash collect First — Overview** est provisionné automatiquement
 (dossier *FirstPay*). Les traces couvrent le chemin Gateway → service → Kafka → consumer.
 
 ## Câblage côté service

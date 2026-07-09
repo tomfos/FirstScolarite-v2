@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Configure le serveur pour FirstPay Studio en mode production avec nginx hôte.
+# Configure le serveur pour Cash collect First en mode production avec nginx hôte.
 #
 # Problème résolu : évite le conflit Caddy (80/443) quand nginx système est déjà actif.
 # Met à jour .env, installe la config nginx (Studio + API + page payeur), démarre Docker.
@@ -296,7 +296,7 @@ print_summary() {
   cat <<EOF
 
 ╔══════════════════════════════════════════════════════════════════╗
-║  FirstPay Studio — configuration nginx + Docker terminée       ║
+║  Cash collect First — configuration nginx + Docker terminée       ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  Mode            : REVERSE_PROXY=nginx (Caddy désactivé)
 ║  Domaine         : ${DOMAIN}

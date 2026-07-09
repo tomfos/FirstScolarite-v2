@@ -8,6 +8,7 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,10 +26,12 @@ public class PublicCheckoutService {
 
     private final PublicCheckoutStore store;
     private final TransactionClient transactions;
+    private final RosterStore roster;
 
-    public PublicCheckoutService(PublicCheckoutStore store, TransactionClient transactions) {
+    public PublicCheckoutService(PublicCheckoutStore store, TransactionClient transactions, RosterStore roster) {
         this.store = store;
         this.transactions = transactions;
+        this.roster = roster;
     }
 
     public Mono<PublicPayResponse> initiate(String shortCode, String slug, PublicPayRequest req) {
@@ -41,13 +44,73 @@ public class PublicCheckoutService {
                 validateRequiredFields(it, req);
                 validatePhone(method, req);
 
-                String reference = buildReference(it);
-                Map<String, Object> metadata = buildMetadata(it, req, reference);
-                String idempotencyKey = UUID.randomUUID().toString();
+                // Si l'interface a un champ « matricule », on re-vérifie le matricule côté serveur et on
+                // ré-injecte les valeurs importées (nom, prénom, classe…) — jamais sur la seule saisie navigateur.
+                return enrichFromRoster(it, req).flatMap(fields -> {
+                    String reference = buildReference(it);
+                    Map<String, Object> metadata = buildMetadata(it, req, reference, fields);
+                    String idempotencyKey = UUID.randomUUID().toString();
 
-                return transactions.createTransaction(
-                        it.tenantId(), idempotencyKey, reference, amount, it.currency(), method, metadata)
-                    .map(txId -> new PublicPayResponse(txId, reference, "PENDING"));
+                    return transactions.createTransaction(
+                            it.tenantId(), idempotencyKey, reference, amount, it.currency(), method, metadata)
+                        .map(txId -> new PublicPayResponse(txId, reference, "PENDING"));
+                });
+            });
+    }
+
+    /**
+     * Recherche PUBLIQUE par matricule (auto-remplissage du formulaire payeur). Résout l'interface
+     * puis interroge le répertoire de l'établissement. Renvoie {@code found=false} si le matricule
+     * n'existe pas — la page payeur affiche alors un message clair et bloque la progression.
+     */
+    public Mono<StudentLookupDto> lookup(String shortCode, String slug, String matricule) {
+        return store.resolveInternal(shortCode, slug)
+            .switchIfEmpty(Mono.error(notFound()))
+            .flatMap(it -> {
+                if (matricule == null || matricule.isBlank()) {
+                    return Mono.just(new StudentLookupDto(false, Map.of()));
+                }
+                return roster.findByMatricule(it.tenantId(), it.establishment(), matricule.trim())
+                    .map(data -> new StudentLookupDto(true, mapRosterToFields(it, data)))
+                    .defaultIfEmpty(new StudentLookupDto(false, Map.of()));
+            });
+    }
+
+    /**
+     * Rapproche la ligne du répertoire des champs du formulaire (par libellé normalisé) et renvoie
+     * une carte {@code idChamp -> valeur}. Ne renvoie QUE les champs présents sur l'interface :
+     * on n'expose pas les colonnes importées non demandées.
+     */
+    private Map<String, String> mapRosterToFields(PublicCheckoutStore.Resolved it, Map<String, String> data) {
+        Map<String, String> out = new LinkedHashMap<>();
+        for (InterfaceFieldDto f : it.customFields()) {
+            if ("matricule".equals(f.type())) continue;
+            String v = data.get(RosterStore.norm(f.label()));
+            if (v != null) out.put(f.id(), v);
+        }
+        return out;
+    }
+
+    /**
+     * Valide le matricule et ré-injecte les valeurs importées côté serveur. Sans champ « matricule »
+     * sur l'interface, le comportement est inchangé (les champs saisis sont renvoyés tels quels).
+     */
+    private Mono<Map<String, String>> enrichFromRoster(PublicCheckoutStore.Resolved it, PublicPayRequest req) {
+        Map<String, String> provided = req != null && req.fields() != null
+            ? new LinkedHashMap<>(req.fields()) : new LinkedHashMap<>();
+        InterfaceFieldDto matriculeField = it.customFields().stream()
+            .filter(f -> "matricule".equals(f.type())).findFirst().orElse(null);
+        if (matriculeField == null) return Mono.just(provided);
+
+        String matricule = provided.get(matriculeField.id());
+        if (matricule == null || matricule.isBlank()) {
+            return Mono.error(badRequest("Matricule requis"));
+        }
+        return roster.findByMatricule(it.tenantId(), it.establishment(), matricule.trim())
+            .switchIfEmpty(Mono.error(badRequest("Matricule introuvable dans les données de l'établissement")))
+            .map(data -> {
+                provided.putAll(mapRosterToFields(it, data)); // valeurs serveur = source de vérité
+                return provided;
             });
     }
 
@@ -169,7 +232,8 @@ public class PublicCheckoutService {
 
     /* ----------------------------- helpers ----------------------------- */
 
-    private Map<String, Object> buildMetadata(PublicCheckoutStore.Resolved it, PublicPayRequest req, String reference) {
+    private Map<String, Object> buildMetadata(PublicCheckoutStore.Resolved it, PublicPayRequest req,
+                                              String reference, Map<String, String> fields) {
         Map<String, Object> md = new HashMap<>();
         md.put("interfaceId", it.interfaceId());
         md.put("interfaceName", it.name());
@@ -178,8 +242,9 @@ public class PublicCheckoutService {
         if (req != null) {
             if (req.payer() != null && !req.payer().isBlank()) md.put("payer", req.payer());
             if (req.phone() != null && !req.phone().isBlank()) md.put("phone", req.phone());
-            if (req.fields() != null && !req.fields().isEmpty()) md.put("fields", req.fields());
         }
+        // `fields` inclut les valeurs auto-remplies re-vérifiées côté serveur (matricule).
+        if (fields != null && !fields.isEmpty()) md.put("fields", fields);
         // Détail des frais réglés (utile aux reçus / rapprochements), en particulier pour un panier multi-frais.
         if ("preset".equals(it.amountType())) {
             Map<String, String> partials = req != null && req.presetAmounts() != null ? req.presetAmounts() : Map.of();

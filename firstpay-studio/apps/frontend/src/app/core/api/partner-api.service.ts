@@ -11,6 +11,7 @@ export interface ApiInterfaceDto {
   name: string;
   description?: string;
   sector?: string;
+  country?: string;
   slug: string;
   customSlug?: string;
   status: string;
@@ -29,6 +30,20 @@ export interface ApiInterfaceDto {
   customFields: { id: string; type: string; label: string; required: boolean; readonly?: boolean; options?: string[] }[];
   methods: Record<string, boolean>;
   qrCodes: Record<string, boolean>;
+  establishment?: string;
+}
+
+/** Aperçu du répertoire étudiants d'un partenaire. */
+export interface RosterSummaryDto {
+  total: number;
+  establishments: string[];
+}
+
+/** Bilan d'un import de répertoire. */
+export interface RosterImportResult {
+  imported: number;
+  skipped: number;
+  total: number;
 }
 
 export interface ApiTransactionDto {
@@ -150,6 +165,21 @@ export class PartnerApiService {
   saveSettings(settings: ApiSettingsDto): Observable<ApiSettingsDto> {
     return this.http.put<ApiSettingsDto>(`${this.base}/api/v1/settings`, settings);
   }
+
+  /* ------------------------ Répertoire étudiants (matricule) ------------------------ */
+
+  fetchRoster(): Observable<RosterSummaryDto> {
+    return this.http.get<RosterSummaryDto>(`${this.base}/api/v1/roster`);
+  }
+
+  /** Importe des lignes (en-tête → valeur). `replace` remplace le répertoire existant. */
+  importRoster(rows: Record<string, string>[], replace = true): Observable<RosterImportResult> {
+    return this.http.post<RosterImportResult>(`${this.base}/api/v1/roster/import`, { rows, replace });
+  }
+
+  clearRoster(): Observable<void> {
+    return this.http.delete<void>(`${this.base}/api/v1/roster`);
+  }
 }
 
 export interface ApiUserDto {
@@ -174,6 +204,7 @@ function mapInterface(d: ApiInterfaceDto): PaymentInterface {
     name: d.name,
     description: d.description ?? '',
     sector: d.sector ?? '',
+    country: d.country ?? 'CM',
     slug: d.slug,
     customSlug: d.customSlug ?? d.slug,
     status: d.status as PaymentInterface['status'],
@@ -204,6 +235,7 @@ function mapInterface(d: ApiInterfaceDto): PaymentInterface {
       transfer: !!d.methods?.['transfer'],
     },
     qrCodes: d.qrCodes ?? {},
+    establishment: d.establishment ?? '',
   };
 }
 
@@ -230,6 +262,7 @@ function toSavePayload(p: Partial<PaymentInterface>) {
     name: p.name,
     description: p.description,
     sector: p.sector,
+    country: p.country,
     customSlug: p.customSlug,
     status: p.status,
     amountType: p.amountType,
@@ -245,5 +278,6 @@ function toSavePayload(p: Partial<PaymentInterface>) {
     customFields: p.customFields,
     methods: p.methods,
     qrCodes: p.qrCodes,
+    establishment: p.establishment ?? '',
   };
 }

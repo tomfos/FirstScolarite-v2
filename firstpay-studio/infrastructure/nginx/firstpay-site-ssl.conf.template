@@ -1,4 +1,4 @@
-# FirstPay Studio — site nginx hôte, variante HTTPS (généré par setup-nginx-production.sh).
+# Cash collect First — site nginx hôte, variante HTTPS (généré par setup-nginx-production.sh).
 # Utilisée dès qu'un certificat Let's Encrypt existe pour ${DOMAIN}
 # (/etc/letsencrypt/live/${DOMAIN}/). Redirige tout le trafic HTTP vers HTTPS et
 # proxifie l'application en TLS. Ne pas éditer sur le serveur : modifier le

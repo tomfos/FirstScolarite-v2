@@ -1,4 +1,4 @@
-# Revue de sécurité — FirstPay Studio
+# Revue de sécurité — Cash collect First
 
 Checklist OWASP Top 10 (2021) mappée au socle actuel.
 

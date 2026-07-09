@@ -24,6 +24,29 @@ export interface PlatformSettings {
   aggSandboxAppId: string;
   aggSandboxSecret: string;
   aggSandboxSecretSet?: boolean;
+  mpgsEnabled: boolean;
+  mpgsMode: 'sandbox' | 'production';
+  mpgsApiVersion: string;
+  mpgsHost: string;
+  mpgsMerchantId: string;
+  mpgsPassword: string;
+  mpgsPasswordSet?: boolean;
+  mpgsSandboxHost: string;
+  mpgsSandboxMerchantId: string;
+  mpgsSandboxPassword: string;
+  mpgsSandboxPasswordSet?: boolean;
+}
+
+/**
+ * Disponibilité par moyen de paiement, dérivée côté serveur des réglages admin
+ * (agrégateur MTN/Orange, passerelle carte). Lisible par les utilisateurs studio,
+ * sans aucun secret. Voir PaymentMethodsController (partner-service).
+ */
+export interface MethodAvailability {
+  orange: boolean;
+  mtn: boolean;
+  card: boolean;
+  transfer: boolean;
 }
 
 /** Paramètres plateforme (config SMTP) — réservés à l'admin banque. */
@@ -44,6 +67,16 @@ export class PlatformApiService {
   test(settings: PlatformSettings, to: string): Observable<{ sent: boolean; error?: string } | null> {
     return this.http
       .post<{ sent: boolean; error?: string }>(`${this.base}/test`, { settings, to })
+      .pipe(catchError(() => of(null)));
+  }
+
+  /**
+   * Disponibilité des moyens de paiement configurés par l'admin (sans secret).
+   * Accessible aux utilisateurs studio pour n'afficher que les moyens réellement activés.
+   */
+  availableMethods(): Observable<MethodAvailability | null> {
+    return this.http
+      .get<MethodAvailability>(`${environment.apiUrl}/api/v1/settings/payment-methods`)
       .pipe(catchError(() => of(null)));
   }
 }
