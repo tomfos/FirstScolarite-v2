@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guide utilisateur — FirstPay Studio</title>
+<meta name="description" content="Guide utilisateur de FirstPay Studio — portail de paiement multi-partenaires d'Afriland First Bank. Parcours payeur public et portail, rôle par rôle.">
+<style>
+  :root{
+    --paper:#F7F8FA; --card:#FFFFFF; --ink:#1A1D21; --heading:#0F1526;
+    --accent:#E53935; --accent-2:#C62828; --accent-soft:#FDECEA;
+    --muted:#5A6270; --line:#ECEEF2; --line-strong:#D9DDE3;
+    --code-bg:#F2EFE9; --shadow:0 1px 2px rgba(15,23,42,.05),0 12px 28px -12px rgba(15,23,42,.12);
+    --ok:#1F9D55; --warn:#B7791F; --info:#2563EB;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --paper:#121319; --card:#1A1C24; --ink:#D4D7E0; --heading:#F3F5FA;
+      --accent:#F4586B; --accent-2:#FF7C8B; --accent-soft:#2A171C;
+      --muted:#9498A6; --line:#262933; --line-strong:#333743;
+      --code-bg:#20232C; --shadow:0 1px 2px rgba(0,0,0,.4),0 16px 34px -16px rgba(0,0,0,.6);
+      --ok:#39B57E; --warn:#E0A75A; --info:#6AA0FF;
+    }
+  }
+  :root[data-theme="light"]{
+    --paper:#F7F8FA; --card:#FFFFFF; --ink:#1A1D21; --heading:#0F1526;
+    --accent:#E53935; --accent-2:#C62828; --accent-soft:#FDECEA;
+    --muted:#5A6270; --line:#ECEEF2; --line-strong:#D9DDE3;
+    --code-bg:#F2EFE9; --shadow:0 1px 2px rgba(15,23,42,.05),0 12px 28px -12px rgba(15,23,42,.12);
+    --ok:#1F9D55; --warn:#B7791F; --info:#2563EB;
+  }
+  :root[data-theme="dark"]{
+    --paper:#121319; --card:#1A1C24; --ink:#D4D7E0; --heading:#F3F5FA;
+    --accent:#F4586B; --accent-2:#FF7C8B; --accent-soft:#2A171C;
+    --muted:#9498A6; --line:#262933; --line-strong:#333743;
+    --code-bg:#20232C; --shadow:0 1px 2px rgba(0,0,0,.4),0 16px 34px -16px rgba(0,0,0,.6);
+    --ok:#39B57E; --warn:#E0A75A; --info:#6AA0FF;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Inter","Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    font-size:16.5px;line-height:1.72;-webkit-font-smoothing:antialiased;
+    font-feature-settings:"kern","liga","cv05";}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+  .wrap{max-width:1200px;margin:0 auto;padding:0 24px;
+    display:grid;grid-template-columns:236px minmax(0,1fr);gap:52px;}
+  @media (max-width:1040px){.wrap{grid-template-columns:1fr;gap:0}.toc{display:none}}
+
+  /* ---- Table of contents ---- */
+  .toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;
+    padding:40px 0 40px;border-right:1px solid var(--line);}
+  .toc .brandmark{display:flex;align-items:center;gap:9px;margin-bottom:22px}
+  .toc .logo{width:26px;height:26px;border-radius:7px;flex:none;
+    background:linear-gradient(135deg,#E53935,#C62828);color:#fff;font-weight:800;
+    font-size:12px;display:flex;align-items:center;justify-content:center;letter-spacing:-.02em}
+  .toc .brandmark b{font-size:13px;letter-spacing:.02em;color:var(--heading)}
+  .toc nav{display:flex;flex-direction:column;gap:1px}
+  .toc a{color:var(--muted);text-decoration:none;font-size:13.5px;padding:5px 12px 5px 0;
+    border-left:2px solid transparent;padding-left:12px;transition:color .15s,border-color .15s}
+  .toc a:hover{color:var(--accent)}
+  .toc a.grp{color:var(--heading);font-weight:700;margin-top:16px;font-size:11px;
+    text-transform:uppercase;letter-spacing:.09em}
+  .toc a.grp:first-child{margin-top:0}
+  .toc a:focus-visible,.content a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+  .content{padding:40px 0 96px;min-width:0}
+
+  /* ---- Hero ---- */
+  .hero{border-left:4px solid var(--accent);padding:6px 0 30px 24px;margin-bottom:8px}
+  .hero .kicker{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  .hero h1{font-size:clamp(30px,4.6vw,46px);line-height:1.06;margin:.28em 0 .3em;
+    color:var(--heading);font-weight:800;letter-spacing:-.02em;text-wrap:balance;max-width:18ch}
+  .hero p.lead{font-size:18px;color:var(--muted);margin:0;max-width:60ch}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+  .meta .chip{font-size:12.5px;padding:5px 11px;border:1px solid var(--line-strong);border-radius:999px;
+    color:var(--ink);background:var(--card);display:inline-flex;gap:7px;align-items:center}
+  .meta .chip b{color:var(--heading)}
+
+  h2{font-size:26px;color:var(--heading);font-weight:800;letter-spacing:-.015em;
+    margin:64px 0 4px;padding-top:14px;scroll-margin-top:24px;text-wrap:balance}
+  h2 .lab{display:block;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);font-weight:700;margin-bottom:6px}
+  h3{font-size:18.5px;color:var(--heading);font-weight:700;margin:38px 0 2px;letter-spacing:-.01em}
+  .content p{max-width:70ch;margin:14px 0}
+  .content section > p:first-of-type{margin-top:10px}
+  strong{color:var(--heading);font-weight:700}
+  em{font-style:normal;color:var(--ink)}
+  a.inline{color:var(--accent);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+  code{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-size:.86em;
+    background:var(--code-bg);padding:.12em .42em;border-radius:5px;color:var(--heading)}
+  hr{border:none;border-top:1px solid var(--line);margin:56px 0 0}
+
+  ul.clean{max-width:70ch;margin:14px 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+  ul.clean li{position:relative;padding-left:20px}
+  ul.clean li::before{content:"";position:absolute;left:2px;top:.62em;width:6px;height:6px;
+    border-radius:50%;background:var(--accent)}
+  ul.clean li b{color:var(--heading)}
+
+  /* steps */
+  ol.steps{max-width:70ch;margin:16px 0;padding:0;list-style:none;counter-reset:s;
+    display:flex;flex-direction:column;gap:10px}
+  ol.steps li{position:relative;padding-left:44px;counter-increment:s}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:-1px;width:28px;height:28px;
+    border-radius:8px;background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:13px;
+    display:flex;align-items:center;justify-content:center}
+
+  /* ---- schematic app-window frame ---- */
+  figure.shot{margin:26px 0 8px}
+  .frame{border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;background:var(--card);box-shadow:var(--shadow)}
+  .frame .bar{display:flex;align-items:center;gap:6px;padding:9px 13px;border-bottom:1px solid var(--line);
+    background:color-mix(in srgb,var(--card) 82%,var(--paper))}
+  .frame .bar i{width:10px;height:10px;border-radius:50%;background:var(--line-strong);flex:none}
+  .frame .bar i:nth-child(1){background:#E5595F}.frame .bar i:nth-child(2){background:#E7B04B}.frame .bar i:nth-child(3){background:#4FB477}
+  .frame .bar em{margin-left:10px;font-size:12px;color:var(--muted);
+    background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:2px 10px;
+    max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  figcaption{font-size:13.5px;color:var(--muted);margin-top:10px;padding-left:2px}
+  figcaption b{color:var(--heading)}
+
+  /* schematic UI mock inside a frame */
+  .mock{display:flex;min-height:150px}
+  .mock .side{width:150px;flex:none;border-right:1px solid var(--line);padding:12px 10px;
+    background:color-mix(in srgb,var(--card) 88%,var(--paper));display:flex;flex-direction:column;gap:6px}
+  .mock .side .brand{display:flex;align-items:center;gap:7px;margin-bottom:8px;font-size:11px;font-weight:700;color:var(--heading)}
+  .mock .side .lg{width:18px;height:18px;border-radius:5px;background:linear-gradient(135deg,#E53935,#C62828)}
+  .mock .side .nav{font-size:11.5px;color:var(--muted);padding:5px 8px;border-radius:6px}
+  .mock .side .nav.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+  .mock .body{flex:1;padding:14px 16px;min-width:0}
+  .mock .cols{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .mock .kpi{flex:1 1 100px;border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:var(--card)}
+  .mock .kpi .k{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .mock .kpi .v{font-size:19px;font-weight:800;color:var(--heading);letter-spacing:-.02em}
+  .mock .row{height:9px;border-radius:4px;background:var(--line);margin:8px 0}
+  .mock .row.s{width:60%}.mock .row.m{width:80%}
+  .mock .pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .pill.ok{background:var(--ok);color:#fff}.pill.pend{background:var(--warn);color:#fff}.pill.fail{background:var(--accent);color:#fff}
+
+  /* payment page mock */
+  .pay{max-width:320px;margin:14px auto;border:1px solid var(--line-strong);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);background:var(--card)}
+  .pay .head{background:linear-gradient(135deg,#E53935,#C62828);color:#fff;padding:14px 16px}
+  .pay .head .t{font-weight:700;font-size:14px}.pay .head .s{font-size:11.5px;opacity:.9}
+  .pay .amt{text-align:center;padding:16px;font-size:26px;font-weight:800;color:var(--heading);letter-spacing:-.02em}
+  .pay .methods{display:flex;gap:8px;padding:0 16px 14px;flex-wrap:wrap}
+  .pay .m{flex:1 1 60px;border:1px solid var(--line);border-radius:9px;padding:8px;text-align:center;font-size:10.5px;font-weight:600;color:var(--muted)}
+  .pay .m.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+  .pay .qr{width:78px;height:78px;margin:2px auto 16px;border-radius:8px;
+    background:repeating-conic-gradient(var(--heading) 0 25%,transparent 0 50%) 0 0/16px 16px;opacity:.85}
+
+  /* callouts */
+  .note{max-width:70ch;margin:20px 0;border:1px solid var(--line);border-left:3px solid var(--accent);
+    background:color-mix(in srgb,var(--accent-soft) 60%,var(--card));border-radius:10px;padding:13px 16px;font-size:15px}
+  .note.tip{border-left-color:var(--ok);background:color-mix(in srgb,var(--ok) 8%,var(--card))}
+  .note.warn{border-left-color:var(--warn);background:color-mix(in srgb,var(--warn) 9%,var(--card))}
+  .note .t{font-weight:700;color:var(--heading);font-size:12px;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:2px}
+
+  /* tables */
+  .tablewrap{overflow-x:auto;margin:20px 0;border:1px solid var(--line);border-radius:12px}
+  table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:560px}
+  th,td{text-align:left;padding:11px 15px;border-bottom:1px solid var(--line);vertical-align:top}
+  thead th{background:color-mix(in srgb,var(--card) 80%,var(--paper));color:var(--heading);
+    font-size:11.5px;text-transform:uppercase;letter-spacing:.06em}
+  tbody tr:last-child td{border-bottom:none}
+  td b{color:var(--heading)}
+  .rolechip{display:inline-flex;align-items:center;gap:7px;font-weight:700;color:var(--heading);white-space:nowrap}
+  .rolechip .sw{width:10px;height:10px;border-radius:3px;flex:none}
+  .kbd{font-family:inherit;font-size:12.5px;border:1px solid var(--line-strong);border-bottom-width:2px;
+    border-radius:6px;padding:1px 7px;background:var(--card);color:var(--heading)}
+
+  .foot{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  .foot b{color:var(--heading)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <aside class="toc">
+    <div class="brandmark"><span class="logo">FP</span><b>FirstPay Studio — Guide</b></div>
+    <nav>
+      <a class="grp" href="#intro">Introduction</a>
+      <a href="#intro">Présentation</a>
+      <a href="#roles">Rôles &amp; accès</a>
+      <a href="#connexion">Se connecter</a>
+
+      <a class="grp" href="#payer">Parcours payeur</a>
+      <a href="#payer">Page de paiement</a>
+      <a href="#payer-methode">Méthode &amp; QR code</a>
+      <a href="#payer-recu">Confirmation &amp; reçu</a>
+
+      <a class="grp" href="#home">Partenaire</a>
+      <a href="#home">Tableau de bord</a>
+      <a href="#studio">Studio de paiement</a>
+      <a href="#publish">Aperçu &amp; publication</a>
+      <a href="#tx">Mes transactions</a>
+      <a href="#users">Utilisateurs &amp; rôles</a>
+      <a href="#settings">Paramètres</a>
+      <a href="#share">Partage &amp; QR</a>
+
+      <a class="grp" href="#admin">Banque</a>
+      <a href="#admin">Console superviseur</a>
+      <a href="#partners">Partenaires &amp; délégation</a>
+      <a href="#tx-all">Transactions plateforme</a>
+      <a href="#audit">Journal d'audit</a>
+      <a href="#settings-platform">Paramètres plateforme</a>
+
+      <a class="grp" href="#cashier">Caisse (agence)</a>
+      <a href="#cashier">Encaisser en agence</a>
+      <a href="#cashier-history">Mes encaissements</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <header class="hero">
+      <span class="kicker">Afriland First Bank · Documentation</span>
+      <h1>Guide utilisateur de FirstPay&nbsp;Studio</h1>
+      <p class="lead">Tout ce qu'il faut savoir pour construire une page de paiement sans code, encaisser, superviser la plateforme et régler en agence — le parcours du payeur public et le portail, rôle par rôle.</p>
+      <div class="meta">
+        <span class="chip"><b>Produit</b> Portail web multi-partenaires</span>
+        <span class="chip"><b>Langue</b> Français (fr-FR)</span>
+        <span class="chip"><b>Devise</b> XAF</span>
+        <span class="chip"><b>Public</b> Partenaires · Banque · Payeurs</span>
+      </div>
+    </header>
+
+    <!-- INTRO -->
+    <section id="intro">
+      <h2><span class="lab">Repères</span>Présentation</h2>
+      <p><strong>FirstPay Studio</strong> est le portail de paiement multi-partenaires d'Afriland First Bank. Les <strong>partenaires</strong> (écoles, associations, commerces, ONG…) construisent des <strong>interfaces de paiement</strong> — des pages de collecte — <strong>sans écrire de code</strong>. Les <strong>payeurs</strong> règlent en quelques secondes via Orange Money, MTN MoMo, carte bancaire ou virement, avec QR code. Le <strong>back-office banque</strong> supervise les partenaires, encaisse en agence et audite la plateforme.</p>
+      <ul class="clean">
+        <li><b>Studio de paiement</b> — un éditeur guidé en 4 étapes pour créer une page de collecte : infos, montant, référence, méthodes.</li>
+        <li><b>Page publique</b> — chaque interface publiée est accessible via un lien court <code>pay.firstpay.cm/{code}/{slug}</code> et un QR code, aux couleurs du partenaire.</li>
+        <li><b>Suivi</b> — transactions en temps réel, filtres, export, et réconciliation côté banque.</li>
+        <li><b>Caisse agence</b> — encaissement en espèces au guichet avec reçu imprimable.</li>
+      </ul>
+      <div class="note"><span class="t">À savoir</span>Les montants sont exprimés en <strong>francs CFA (XAF)</strong> et affichés au format français (ex. <code>1&nbsp;500&nbsp;000&nbsp;XAF</code>). Chaque partenaire dispose de sa propre <strong>couleur de marque</strong>, appliquée à ses pages de paiement.</div>
+    </section>
+
+    <!-- ROLES -->
+    <section id="roles">
+      <h2><span class="lab">Repères</span>Rôles &amp; accès</h2>
+      <p>Ce que chaque utilisateur voit et peut faire dépend de son <strong>rôle</strong>. On distingue deux « côtés » : la <strong>Banque</strong> et le <strong>Partenaire</strong>. Le menu latéral n'affiche que les écrans autorisés par le rôle.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Rôle</th><th>Côté</th><th>À quoi il sert</th><th>Écrans principaux</th></tr></thead>
+          <tbody>
+            <tr><td><span class="rolechip"><span class="sw" style="background:#0F1115"></span>Administrateur Banque</span></td><td>Banque</td><td>Pilotage global, supervision des partenaires, audit, délégation.</td><td>Console, Partenaires, Transactions plateforme, Audit, Paramètres</td></tr>
+            <tr><td><span class="rolechip"><span class="sw" style="background:#7C3AED"></span>Caissière Agence</span></td><td>Banque</td><td>Encaisse en espèces au guichet et imprime les reçus.</td><td>Caisse, Mes encaissements</td></tr>
+            <tr><td><span class="rolechip"><span class="sw" style="background:#E53935"></span>Administrateur Partenaire</span></td><td>Partenaire</td><td>Gère tout l'espace du partenaire : studio, transactions, équipe, paramètres.</td><td>Tableau de bord, Studio, Transactions, Utilisateurs, Paramètres</td></tr>
+            <tr><td><span class="rolechip"><span class="sw" style="background:#2563EB"></span>Gestionnaire Partenaire</span></td><td>Partenaire</td><td>Crée et modifie les interfaces, suit et exporte les transactions.</td><td>Tableau de bord, Studio, Transactions</td></tr>
+            <tr><td><span class="rolechip"><span class="sw" style="background:#1F8A5B"></span>Comptable Partenaire</span></td><td>Partenaire</td><td>Consulte et exporte les transactions, lit les rapports.</td><td>Tableau de bord, Transactions</td></tr>
+            <tr><td><span class="rolechip"><span class="sw" style="background:#7C8493"></span>Lecture seule</span></td><td>Partenaire</td><td>Consulte le studio et les transactions, sans rien modifier.</td><td>Tableau de bord, Studio (lecture), Transactions</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note tip"><span class="t">Délégation (impersonation)</span>Un <strong>Administrateur Banque</strong> peut « entrer » dans l'espace d'un partenaire pour l'assister : il agit alors comme <strong>Administrateur Partenaire</strong> sur ce seul partenaire. Chaque délégation est <strong>journalisée dans l'audit</strong>.</div>
+    </section>
+
+    <!-- CONNEXION -->
+    <section id="connexion">
+      <h2><span class="lab">Démarrer</span>Se connecter</h2>
+      <p>Rendez-vous sur le portail et saisissez votre <strong>adresse e-mail</strong> et votre <strong>mot de passe</strong>, puis <span class="kbd">Se connecter</span>. Selon votre rôle, vous arrivez directement sur votre écran d'accueil : le <strong>Tableau de bord</strong> côté partenaire, la <strong>Console</strong> côté administrateur banque, ou la <strong>Caisse</strong> côté agence.</p>
+      <h3>Comptes de démonstration</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Rôle</th><th>Identifiant</th><th>Rattachement</th></tr></thead>
+          <tbody>
+            <tr><td>Administrateur Banque</td><td><code>admin.banque@afrilandfirstbank.com</code></td><td>Siège · Yaoundé</td></tr>
+            <tr><td>Caissière Agence</td><td><code>caisse.bonanjo@afrilandfirstbank.com</code></td><td>Agence Bonanjo · Douala</td></tr>
+            <tr><td>Administrateur Partenaire</td><td><code>jospinleunou@softtech.cm</code></td><td>SOFT TECHNOLOGIES</td></tr>
+            <tr><td>Gestionnaire Partenaire</td><td><code>marie.ngono@softtech.cm</code></td><td>SOFT TECHNOLOGIES</td></tr>
+            <tr><td>Comptable Partenaire</td><td><code>d.essomba@softtech.cm</code></td><td>SOFT TECHNOLOGIES</td></tr>
+            <tr><td>Lecture seule</td><td><code>s.mbarga@softtech.cm</code></td><td>SOFT TECHNOLOGIES</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note"><span class="t">Bandeau de rôle</span>La barre du haut rappelle en permanence votre contexte : le <strong>badge partenaire</strong> (code <code>mono</code>), le badge <em>« Mode {rôle} »</em> côté banque, et une <strong>bannière de délégation</strong> visible quand un administrateur banque agit au nom d'un partenaire.</div>
+    </section>
+
+    <!-- ============ PARCOURS PAYEUR ============ -->
+    <section id="payer">
+      <h2><span class="lab">Parcours payeur</span>Page de paiement</h2>
+      <p>C'est l'écran vu par le <strong>client final</strong>. Il n'a rien à installer et n'a pas de compte à créer : il ouvre le lien reçu (ou scanne le QR code) et paie. La page reprend le <strong>nom, le logo et la couleur</strong> du partenaire.</p>
+      <figure class="shot">
+        <div class="frame">
+          <div class="bar"><i></i><i></i><i></i><em>pay.firstpay.cm/FSPAY_202605211633050082/frais-scolarite-2025</em></div>
+          <div class="pay">
+            <div class="head"><div class="t">SOFT TECHNOLOGIES</div><div class="s">Frais de scolarité 2025-2026</div></div>
+            <div class="amt">150&nbsp;000&nbsp;XAF</div>
+            <div class="methods">
+              <div class="m on">Orange</div><div class="m">MTN</div><div class="m">Carte</div><div class="m">Virement</div>
+            </div>
+            <div class="qr"></div>
+          </div>
+        </div>
+        <figcaption><b>Page de paiement publique.</b> Montant, méthodes disponibles et QR code — aux couleurs du partenaire.</figcaption>
+      </figure>
+      <p>Selon la configuration de l'interface, le payeur peut avoir à <strong>saisir un montant</strong> (page à montant libre), à <strong>choisir un tarif</strong> (page à montants préréglés) ou à voir un <strong>montant fixe</strong>. Il renseigne ensuite la <strong>référence</strong> demandée (ex. matricule de l'élève) et tout champ personnalisé requis.</p>
+    </section>
+
+    <section id="payer-methode">
+      <h2><span class="lab">Parcours payeur</span>Choisir la méthode &amp; le QR code</h2>
+      <ol class="steps">
+        <li>Le payeur choisit sa <strong>méthode</strong> parmi celles activées : <strong>Orange Money</strong>, <strong>MTN MoMo</strong>, <strong>carte bancaire</strong> ou <strong>virement</strong>.</li>
+        <li>Pour le mobile money, il saisit son <strong>numéro</strong> puis <strong>valide</strong> ; une demande de confirmation arrive sur son téléphone (USSD / application).</li>
+        <li>Il peut aussi <strong>scanner le QR code</strong> de la méthode choisie depuis son application de paiement.</li>
+        <li>La page reste en <span class="pill pend">pending</span> jusqu'à la confirmation, puis bascule en <span class="pill ok">success</span> — ou <span class="pill fail">failed</span> en cas d'échec.</li>
+      </ol>
+      <div class="note"><span class="t">Répartition des méthodes</span>Sur le terrain, la ventilation typique est Orange&nbsp;~40&nbsp;%, MTN&nbsp;~35&nbsp;%, carte&nbsp;~18&nbsp;%, virement&nbsp;~7&nbsp;%. Un partenaire n'active que les méthodes qui le concernent.</div>
+    </section>
+
+    <section id="payer-recu">
+      <h2><span class="lab">Parcours payeur</span>Confirmation &amp; reçu</h2>
+      <p>Dès la validation, le payeur voit un <strong>écran de confirmation</strong> avec le <strong>numéro de transaction</strong> (référence <code>mono</code>), le montant et la date. La transaction apparaît instantanément côté partenaire dans <a class="inline" href="#tx">Mes transactions</a>.</p>
+      <div class="note tip"><span class="t">Preuve de paiement</span>Le payeur peut conserver la référence de transaction. Côté agence, un <strong>reçu imprimable</strong> est produit pour les encaissements en espèces (voir <a class="inline" href="#cashier">Caisse</a>).</div>
+    </section>
+
+    <!-- ============ PARTENAIRE ============ -->
+    <section id="home">
+      <h2><span class="lab">Partenaire</span>Tableau de bord</h2>
+      <p>Écran d'accueil du partenaire. Il présente les <strong>métriques clés</strong> (volume encaissé, nombre de transactions, taux de réussite), les <strong>interfaces les plus utilisées</strong> et l'<strong>activité récente</strong>.</p>
+      <figure class="shot">
+        <div class="frame">
+          <div class="bar"><i></i><i></i><i></i><em>FirstPay Studio · Portail partenaire</em></div>
+          <div class="mock">
+            <div class="side">
+              <div class="brand"><span class="lg"></span>FirstPay</div>
+              <div class="nav on">Tableau de bord</div>
+              <div class="nav">Studio</div>
+              <div class="nav">Transactions</div>
+              <div class="nav">Utilisateurs</div>
+              <div class="nav">Paramètres</div>
+            </div>
+            <div class="body">
+              <div class="cols">
+                <div class="kpi"><div class="k">Encaissé (mois)</div><div class="v">4,2 M</div></div>
+                <div class="kpi"><div class="k">Transactions</div><div class="v">312</div></div>
+                <div class="kpi"><div class="k">Réussite</div><div class="v">98 %</div></div>
+              </div>
+              <div class="row m"></div><div class="row s"></div><div class="row m"></div>
+            </div>
+          </div>
+        </div>
+        <figcaption><b>Tableau de bord partenaire.</b> Métriques, top interfaces et activité récente. La barre latérale est filtrée selon le rôle.</figcaption>
+      </figure>
+    </section>
+
+    <section id="studio">
+      <h2><span class="lab">Partenaire</span>Studio de paiement</h2>
+      <p>Le <strong>Studio</strong> est le cœur du portail : c'est là qu'on crée et gère les <strong>interfaces de paiement</strong>. À gauche, la liste des interfaces (avec leur état <span class="pill pend" style="background:var(--muted)">brouillon</span> ou <span class="pill ok">actif</span>) ; à droite, l'éditeur ou le détail.</p>
+      <p>La création se fait avec un <strong>éditeur guidé en 4 étapes</strong> — aucun code n'est nécessaire :</p>
+      <ol class="steps">
+        <li><b>Infos</b> — nom de l'interface, description, secteur d'activité et <em>slug</em> personnalisé (la fin du lien public, ex. <code>frais-scolarite-2025</code>).</li>
+        <li><b>Montant</b> — choisissez le mode : <strong>fixe</strong> (un seul montant), <strong>préréglé</strong> (plusieurs tarifs au choix) ou <strong>libre</strong> (le payeur saisit, avec min/max). Devise <strong>XAF</strong>.</li>
+        <li><b>Référence &amp; champs</b> — définissez la référence attendue (automatique ou personnalisée) et ajoutez des <strong>champs personnalisés</strong> (texte ou liste, obligatoires ou non), ex. <em>Matricule élève</em>, <em>Classe</em>.</li>
+        <li><b>Méthodes de paiement</b> — activez <strong>Orange</strong>, <strong>MTN</strong>, <strong>carte</strong> et/ou <strong>virement</strong>, et associez un <strong>QR code</strong> par méthode.</li>
+      </ol>
+      <figure class="shot">
+        <div class="frame">
+          <div class="bar"><i></i><i></i><i></i><em>FirstPay Studio · Studio › Éditeur (étape 2/4 — Montant)</em></div>
+          <div class="mock">
+            <div class="side">
+              <div class="brand"><span class="lg"></span>Interfaces</div>
+              <div class="nav on">Frais de scolarité</div>
+              <div class="nav">Cotisation tontine</div>
+              <div class="nav">Don campagne santé</div>
+            </div>
+            <div class="body">
+              <div class="cols">
+                <div class="kpi"><div class="k">Étape</div><div class="v">2 / 4</div></div>
+                <div class="kpi"><div class="k">Mode montant</div><div class="v">Préréglé</div></div>
+              </div>
+              <div class="row m"></div><div class="row m"></div><div class="row s"></div>
+            </div>
+          </div>
+        </div>
+        <figcaption><b>Studio — éditeur en 4 étapes.</b> Panneau des interfaces à gauche, éditeur à droite. Un <b>Aperçu</b> montre la page de paiement en temps réel.</figcaption>
+      </figure>
+      <div class="note"><span class="t">Exemples fournis</span>Trois interfaces d'exemple illustrent les trois modes : <em>« Frais de scolarité 2025-2026 »</em> (préréglé), <em>« Cotisation tontine »</em> (fixe) et <em>« Don campagne santé »</em> (libre min-max).</div>
+      <div class="note warn"><span class="t">Droits requis</span>Créer et modifier une interface demande le rôle <strong>Administrateur</strong> ou <strong>Gestionnaire</strong> partenaire. Les rôles <strong>Comptable</strong> et <strong>Lecture seule</strong> ne voient le Studio qu'en consultation.</div>
+    </section>
+
+    <section id="publish">
+      <h2><span class="lab">Partenaire</span>Aperçu &amp; publication</h2>
+      <p>Avant de publier, ouvrez l'<strong>Aperçu de publication</strong> : il simule le <strong>parcours du payeur</strong> de bout en bout, exactement comme le verra le client. Vérifiez le montant, la référence, les méthodes et le rendu de marque.</p>
+      <ol class="steps">
+        <li>Depuis l'éditeur, cliquez sur <span class="kbd">Aperçu</span> pour voir la page de paiement rendue.</li>
+        <li>Parcourez la simulation ; corrigez au besoin en revenant sur les étapes.</li>
+        <li>Cliquez sur <span class="kbd">Publier</span> : l'interface passe à l'état <span class="pill ok">actif</span> et son lien public devient disponible.</li>
+      </ol>
+      <div class="note tip"><span class="t">Brouillon vs actif</span>Une interface en <strong>brouillon</strong> n'est pas payable. Seules les interfaces <strong>actives</strong> acceptent des paiements. Vous pouvez repasser une interface en brouillon pour la suspendre.</div>
+    </section>
+
+    <section id="tx">
+      <h2><span class="lab">Partenaire</span>Mes transactions</h2>
+      <p>Toutes les transactions du partenaire, en <strong>vue globale</strong> ou <strong>par interface</strong>. Chaque ligne porte son état : <span class="pill ok">success</span>, <span class="pill pend">pending</span> ou <span class="pill fail">failed</span>.</p>
+      <ul class="clean">
+        <li><b>Filtres</b> — par interface, méthode, état, période.</li>
+        <li><b>Recherche</b> — par référence de transaction ou référence payeur.</li>
+        <li><b>Export</b> — téléchargez les transactions filtrées pour la comptabilité.</li>
+      </ul>
+      <div class="note"><span class="t">Qui peut exporter ?</span>L'export est disponible pour les rôles <strong>Administrateur</strong>, <strong>Gestionnaire</strong> et <strong>Comptable</strong> partenaire.</div>
+    </section>
+
+    <section id="users">
+      <h2><span class="lab">Partenaire</span>Utilisateurs &amp; rôles</h2>
+      <p>L'<strong>Administrateur Partenaire</strong> gère son équipe depuis cet écran : il <strong>invite</strong> de nouveaux membres, leur attribue un <strong>rôle</strong> (Gestionnaire, Comptable, Lecture seule) et suit leur <strong>statut</strong>.</p>
+      <ol class="steps">
+        <li>Cliquez sur <span class="kbd">Inviter</span> et saisissez l'e-mail du collaborateur.</li>
+        <li>Choisissez son <strong>rôle</strong> — il déterminera les écrans et actions disponibles.</li>
+        <li>L'invité reçoit un e-mail pour rejoindre l'espace du partenaire.</li>
+      </ol>
+      <div class="note warn"><span class="t">Réservé à l'administrateur</span>Seul l'<strong>Administrateur Partenaire</strong> gère les utilisateurs et les rôles.</div>
+    </section>
+
+    <section id="settings">
+      <h2><span class="lab">Partenaire</span>Paramètres</h2>
+      <p>Personnalisez l'espace et les pages de paiement du partenaire :</p>
+      <ul class="clean">
+        <li><b>Logo &amp; couleur de marque</b> — appliqués à toutes les pages de paiement publiques.</li>
+        <li><b>Import de données clients</b> — pré-remplir des références (ex. liste d'élèves).</li>
+        <li><b>Sécurité</b> — options de connexion et d'accès.</li>
+        <li><b>Notifications</b> — activez les alertes <strong>e-mail / SMS</strong> par type d'événement (paiement reçu, échec…).</li>
+      </ul>
+    </section>
+
+    <section id="share">
+      <h2><span class="lab">Partenaire</span>Partage &amp; QR</h2>
+      <p>Pour encaisser, diffusez le lien de l'interface. La <strong>modale de partage</strong> fournit tout le nécessaire :</p>
+      <ul class="clean">
+        <li><b>Lien court</b> — <code>pay.firstpay.cm/{code}/{slug}</code>, à copier ou raccourcir.</li>
+        <li><b>QR code</b> — à imprimer sur une affiche, un flyer ou une facture.</li>
+        <li><b>Envoi direct</b> — par <strong>e-mail</strong>, <strong>WhatsApp</strong> ou <strong>SMS</strong>.</li>
+      </ul>
+      <div class="note warn"><span class="t">Supprimer une interface</span>La suppression d'une interface passe par une <strong>validation progressive</strong> avec saisie d'un <strong>motif</strong>. Une interface supprimée cesse d'accepter des paiements.</div>
+    </section>
+
+    <!-- ============ BANQUE ============ -->
+    <section id="admin">
+      <h2><span class="lab">Banque</span>Console superviseur</h2>
+      <p>Écran d'accueil de l'<strong>Administrateur Banque</strong>. La console offre une <strong>vue d'ensemble de la plateforme</strong> : volumes agrégés tous partenaires, santé du service et activité récente.</p>
+      <figure class="shot">
+        <div class="frame">
+          <div class="bar"><i></i><i></i><i></i><em>FirstPay Studio · Console superviseur — Mode Administrateur Banque</em></div>
+          <div class="mock">
+            <div class="side">
+              <div class="brand"><span class="lg"></span>Console</div>
+              <div class="nav on">Tableau de bord</div>
+              <div class="nav">Partenaires</div>
+              <div class="nav">Transactions</div>
+              <div class="nav">Journal d'audit</div>
+              <div class="nav">Paramètres</div>
+            </div>
+            <div class="body">
+              <div class="cols">
+                <div class="kpi"><div class="k">Partenaires</div><div class="v">48</div></div>
+                <div class="kpi"><div class="k">Volume (jour)</div><div class="v">86 M</div></div>
+                <div class="kpi"><div class="k">TPS</div><div class="v">1,2 k</div></div>
+              </div>
+              <div class="row m"></div><div class="row s"></div>
+            </div>
+          </div>
+        </div>
+        <figcaption><b>Console superviseur.</b> Supervision de toute la plateforme, tous partenaires confondus.</figcaption>
+      </figure>
+    </section>
+
+    <section id="partners">
+      <h2><span class="lab">Banque</span>Partenaires &amp; délégation</h2>
+      <p>La liste de tous les <strong>partenaires</strong> de la plateforme. Depuis cet écran, l'administrateur peut <strong>déléguer</strong> (impersonation) vers un partenaire pour l'assister.</p>
+      <ol class="steps">
+        <li>Ouvrez la fiche du partenaire concerné.</li>
+        <li>Cliquez sur <span class="kbd">Déléguer</span> : vous entrez dans son espace en tant qu'<strong>Administrateur Partenaire</strong>, borné à ce partenaire.</li>
+        <li>Une <strong>bannière de délégation</strong> reste affichée ; quittez-la pour revenir à la console.</li>
+      </ol>
+      <div class="note warn"><span class="t">Traçabilité</span>Toute délégation est <strong>enregistrée dans le journal d'audit</strong>. Les actions menées pendant la délégation sont attribuées et horodatées.</div>
+    </section>
+
+    <section id="tx-all">
+      <h2><span class="lab">Banque</span>Transactions plateforme</h2>
+      <p>Toutes les transactions de <strong>tous les partenaires</strong>, avec filtre <strong>par partenaire</strong>, méthode, état et période. C'est la vue de <strong>réconciliation</strong> centrale de la banque.</p>
+      <ul class="clean">
+        <li><b>Filtrage transversal</b> — croisez partenaire, méthode et période.</li>
+        <li><b>Suivi des états</b> — repérez les <span class="pill pend">pending</span> et <span class="pill fail">failed</span> à traiter.</li>
+        <li><b>Remboursement</b> — l'administrateur banque peut initier un remboursement (droit <code>tx.refund</code>).</li>
+      </ul>
+    </section>
+
+    <section id="audit">
+      <h2><span class="lab">Banque</span>Journal d'audit</h2>
+      <p>Le <strong>journal d'audit</strong> consigne les <strong>événements sensibles</strong> de la plateforme en mode <strong>append-only</strong> (aucune modification possible) : connexions, délégations, changements de configuration, remboursements.</p>
+      <div class="note tip"><span class="t">Pourquoi c'est important</span>L'audit garantit la <strong>traçabilité</strong> et la <strong>conformité</strong>. Il est réservé à l'Administrateur Banque (droit <code>audit.read</code>).</div>
+    </section>
+
+    <section id="settings-platform">
+      <h2><span class="lab">Banque</span>Paramètres plateforme</h2>
+      <p>Réglages globaux de la plateforme réservés à l'Administrateur Banque : paramètres généraux, intégrations des moyens de paiement et bascule <strong>sandbox / production</strong> de l'agrégateur, configurable depuis l'interface.</p>
+      <div class="note warn"><span class="t">Sandbox vs production</span>En <strong>sandbox</strong>, les paiements sont simulés (aucun mouvement réel). Ne basculez en <strong>production</strong> qu'après validation — cela active les encaissements réels.</div>
+    </section>
+
+    <!-- ============ CAISSE ============ -->
+    <section id="cashier">
+      <h2><span class="lab">Caisse (agence)</span>Encaisser en agence</h2>
+      <p>La <strong>Caissière Agence</strong> encaisse en <strong>espèces</strong> au guichet pour le compte d'une interface de paiement, puis remet un <strong>reçu imprimable</strong>.</p>
+      <ol class="steps">
+        <li><b>Rechercher l'interface</b> — retrouvez la page de collecte concernée (ex. « Frais de scolarité »).</li>
+        <li><b>Saisir le payeur</b> — renseignez la référence (ex. matricule) et le montant reçu dans le formulaire d'encaissement.</li>
+        <li><b>Encaisser</b> — validez l'opération ; la transaction est enregistrée en <span class="pill ok">success</span>.</li>
+        <li><b>Imprimer le reçu</b> — la fenêtre de reçu s'ouvre pour l'impression et la remise au client.</li>
+      </ol>
+      <figure class="shot">
+        <div class="frame">
+          <div class="bar"><i></i><i></i><i></i><em>FirstPay Studio · Caisse — Agence Bonanjo, Douala</em></div>
+          <div class="mock">
+            <div class="side">
+              <div class="brand"><span class="lg"></span>Caisse</div>
+              <div class="nav on">Encaisser</div>
+              <div class="nav">Mes encaissements</div>
+            </div>
+            <div class="body">
+              <div class="cols">
+                <div class="kpi"><div class="k">Interface</div><div class="v">Scolarité</div></div>
+                <div class="kpi"><div class="k">Montant reçu</div><div class="v">150 000</div></div>
+              </div>
+              <div class="row m"></div><div class="row s"></div>
+              <span class="pill ok">Reçu imprimé</span>
+            </div>
+          </div>
+        </div>
+        <figcaption><b>Poste de caisse.</b> Recherche d'interface, formulaire payeur, encaissement puis reçu imprimable.</figcaption>
+      </figure>
+    </section>
+
+    <section id="cashier-history">
+      <h2><span class="lab">Caisse (agence)</span>Mes encaissements</h2>
+      <p>L'<strong>historique des encaissements</strong> du caissier connecté : chaque opération avec son montant, son interface, sa date et son reçu. Utile pour le <strong>rapprochement de caisse</strong> en fin de journée.</p>
+      <div class="note tip"><span class="t">Réimprimer un reçu</span>Depuis l'historique, rouvrez une opération pour <strong>réimprimer le reçu</strong> si le client l'a égaré.</div>
+    </section>
+
+    <div class="foot">
+      <p><b>FirstPay Studio</b> — Portail de paiement multi-partenaires d'<b>Afriland First Bank</b>. Ce guide décrit les parcours utilisateurs&nbsp;; les libellés exacts peuvent légèrement varier selon la version déployée et votre rôle. Voir aussi le <a class="inline" href="cahier-des-charges.html">Cahier des charges</a>. Devise&nbsp;: <b>XAF</b> · Locale&nbsp;: <b>fr-FR</b>.</p>
+    </div>
+  </main>
+</div>
+</body>
+</html>
