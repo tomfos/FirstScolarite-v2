@@ -1,4 +1,4 @@
-# Cash collect First
+# First Collect
 
 Portail de paiement multi‑partenaires d'**Afriland First Bank**. Les partenaires
 construisent des **interfaces de paiement** (pages de collecte) sans code ; les

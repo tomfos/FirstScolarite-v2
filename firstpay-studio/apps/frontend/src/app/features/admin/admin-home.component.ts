@@ -18,7 +18,7 @@ import { StatCardComponent } from '../../shared/components/stat-card.component';
           <div class="hero-blob"></div>
           <div class="eyebrow">Console superviseur · Afriland First Bank</div>
           <div class="hello">Bonjour {{ firstName() }}.</div>
-          <div class="sub">Vous avez un accès complet à la plateforme Cash collect First : supervision, audit, débogage des partenaires.</div>
+          <div class="sub">Vous avez un accès complet à la plateforme First Collect : supervision, audit, débogage des partenaires.</div>
         </div>
 
         <div class="stats">

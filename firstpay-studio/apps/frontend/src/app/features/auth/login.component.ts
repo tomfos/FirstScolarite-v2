@@ -17,9 +17,9 @@ import { environment } from '../../../environments/environment';
     <div class="page">
       <div class="brand-panel">
         <div class="brand-top">
-          <div class="logo">CCF</div>
+          <div class="logo">FC</div>
           <div>
-            <div class="bname">CASH COLLECT FIRST</div>
+            <div class="bname">FIRST COLLECT</div>
             <div class="bsub">Afriland First Bank</div>
           </div>
         </div>

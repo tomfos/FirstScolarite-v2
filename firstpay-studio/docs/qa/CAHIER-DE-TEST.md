@@ -1,4 +1,4 @@
-# Cahier de test fonctionnel — Cash Collect First (FirstPay Studio)
+# Cahier de test fonctionnel — First Collect
 
 > **Objet** : validation fonctionnelle complète avant mise en production.
 > **Portée** : portail partenaire, console banque, caisse, page payeur publique, API/backend, intégrations de paiement, exigences non-fonctionnelles.

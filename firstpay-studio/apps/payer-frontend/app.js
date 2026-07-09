@@ -1,5 +1,5 @@
 /*
- * Page payeur publique Cash collect First — app statique autonome (sans framework).
+ * Page payeur publique First Collect — app statique autonome (sans framework).
  * Parcours court en 2 étapes (moins fatigant pour le payeur, meilleure UX) :
  *   0 Détails (identification + montant) · 1 Paiement (moyen + numéro/carte) → écran de résultat
  * Flux : résout /{shortCode}/{slug} via l'API publique, guide le payeur en deux écrans,
@@ -101,10 +101,10 @@
   }
 
   function applyBrand(d) {
-    merchantEl.textContent = d.merchant.name || 'Cash collect First';
+    merchantEl.textContent = d.merchant.name || 'First Collect';
     if (d.merchant.brandColor) document.documentElement.style.setProperty('--fp', d.merchant.brandColor);
     if (d.merchant.logoUrl) { logoEl.innerHTML = ''; var img = document.createElement('img'); img.src = d.merchant.logoUrl; img.alt = ''; logoEl.appendChild(img); }
-    else logoEl.textContent = (d.merchant.shortCode || 'CCF').slice(0, 4).toUpperCase();
+    else logoEl.textContent = (d.merchant.shortCode || 'FC').slice(0, 4).toUpperCase();
     document.title = 'Payer · ' + (d.name || d.merchant.name);
   }
 
@@ -700,7 +700,7 @@
 
   /* --------------------------- erreurs / utils --------------------------- */
   function renderError(title, sub) {
-    merchantEl.textContent = 'Cash collect First';
+    merchantEl.textContent = 'First Collect';
     bodyEl.innerHTML = '<div class="center"><div class="ico ko">!</div><div class="rtitle">' + esc(title) + '</div><div class="rsub">' + esc(sub) + '</div></div>';
   }
   function qsa(sel) { return Array.prototype.slice.call(bodyEl.querySelectorAll(sel)); }

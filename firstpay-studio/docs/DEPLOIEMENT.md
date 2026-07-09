@@ -1,6 +1,6 @@
-# Guide de déploiement — Cash collect First
+# Guide de déploiement — First Collect
 
-Ce document décrit le déploiement de la plateforme Cash collect First en **environnement de test** (recette / staging) et en **environnement de production**, avec deux profils de données :
+Ce document décrit le déploiement de la plateforme First Collect en **environnement de test** (recette / staging) et en **environnement de production**, avec deux profils de données :
 
 | Profil | Usage | Données |
 |--------|-------|---------|

@@ -1,4 +1,4 @@
-# Matrice des rôles & permissions — Cash collect First
+# Matrice des rôles & permissions — First Collect
 
 Catalogue de rôles fidèle au prototype (`ROLES_CATALOG`). Deux « côtés » : `bank` et
 `partner`. Un `bank_admin` peut **impersonate** (déléguer sur) un partenaire et agit

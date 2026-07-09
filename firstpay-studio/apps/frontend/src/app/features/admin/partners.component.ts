@@ -23,7 +23,7 @@ const SECTORS = ['Fintech', 'Éducation', 'ONG / Associatif', 'Commerce', 'Sant�
     <div class="page">
       <div class="head">
         <div>
-          <div class="eyebrow">Plateforme Cash collect First · Supervision</div>
+          <div class="eyebrow">Plateforme First Collect · Supervision</div>
           <div class="title">Partenaires</div>
           <div class="subtitle">Tous les partenaires enrôlés. Cliquez sur « Ouvrir » pour vous connecter en leur nom et déboguer.</div>
         </div>

@@ -1,4 +1,4 @@
-# Phases d'implémentation — Cash collect First
+# Phases d'implémentation — First Collect
 
 Roadmap incrémentale : chaque phase est livrable, testable et déployable.
 

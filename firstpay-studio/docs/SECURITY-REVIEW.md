@@ -1,4 +1,4 @@
-# Revue de sécurité — Cash collect First
+# Revue de sécurité — First Collect
 
 Checklist OWASP Top 10 (2021) mappée au socle actuel.
 

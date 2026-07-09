@@ -1,6 +1,6 @@
-# Design System & Inventaire des écrans — Cash collect First
+# Design System & Inventaire des écrans — First Collect
 
-Référence fidèle extraite du prototype `Cash collect First (standalone).html`. Toute
+Référence fidèle extraite du prototype `First Collect (standalone).html`. Toute
 implémentation Angular doit respecter ces tokens et cet inventaire.
 
 ## 1. Tokens (variables CSS — source de vérité)

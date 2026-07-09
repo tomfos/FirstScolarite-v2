@@ -14,7 +14,7 @@ import { Component, Input } from '@angular/core';
         <div class="badge">{{ phase }}</div>
         <h1>{{ title }}</h1>
         <p>{{ desc }}</p>
-        <div class="note">Écran à implémenter — fidèle au prototype Cash collect First.</div>
+        <div class="note">Écran à implémenter — fidèle au prototype First Collect.</div>
       </div>
     </div>
   `,

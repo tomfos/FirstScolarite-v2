@@ -13,7 +13,7 @@ import { PARTNER_ROLES, PartnerRole, PartnerUser, UsersStore } from './users.sto
         <div>
           <div class="eyebrow">Portail partenaire · Module</div>
           <div class="title">Utilisateurs &amp; rôles</div>
-          <div class="subtitle">Gérez les membres qui accèdent à votre portail Cash collect First et leurs permissions.</div>
+          <div class="subtitle">Gérez les membres qui accèdent à votre portail First Collect et leurs permissions.</div>
         </div>
         <button class="primary" (click)="openInvite()">+ Inviter un utilisateur</button>
       </div>

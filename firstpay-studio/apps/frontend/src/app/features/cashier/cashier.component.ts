@@ -164,7 +164,7 @@ const STEP_LABELS = ['Identification', 'Montant', 'Mode', 'Validation'];
       @if (receipt(); as r) {
         <div class="overlay" (click)="receipt.set(null)">
           <div class="ticket" (click)="$event.stopPropagation()">
-            <div class="t-brand"><div class="t-logo">CCF</div><div><b>Cash collect First</b><div class="t-bank">Afriland First Bank</div></div></div>
+            <div class="t-brand"><div class="t-logo">FC</div><div><b>First Collect</b><div class="t-bank">Afriland First Bank</div></div></div>
             <div class="t-ok">✓ Paiement encaissé</div>
             <div class="t-amount">{{ fr(r.amount) }} XAF</div>
             <div class="t-rows">

@@ -19,7 +19,7 @@ export interface RoleDef {
 export const ROLES_CATALOG: Record<RoleId, RoleDef> = {
   bank_admin: {
     label: 'Administrateur Banque', side: 'bank', color: '#0F1115', bg: '#F2F4F7',
-    desc: "Accès complet à la plateforme Cash collect First. Supervise tous les partenaires, accède à l'audit, débogue les interfaces, dénoue les litiges.",
+    desc: "Accès complet à la plateforme First Collect. Supervise tous les partenaires, accède à l'audit, débogue les interfaces, dénoue les litiges.",
     perms: ['*', 'platform.read', 'platform.write', 'partners.manage', 'audit.read', 'impersonate', 'tx.refund'],
     home: 'admin_home',
     modules: ['admin_home', 'partners', 'transactions_all', 'audit', 'settings_platform'],

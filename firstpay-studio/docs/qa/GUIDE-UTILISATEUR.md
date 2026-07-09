@@ -1,4 +1,4 @@
-# Guide utilisateur — Cash Collect First (FirstPay Studio)
+# Guide utilisateur — First Collect
 
 > Plateforme d'encaissement multicanal d'Afriland First Bank.
 > Ce guide s'adresse aux **partenaires**, aux **agents de la banque**, aux **caissières** et aux **payeurs finaux**.
@@ -9,7 +9,7 @@
 
 ## 1. Présentation
 
-Cash Collect First permet à un **partenaire** (établissement, entreprise, association) de créer des **interfaces de paiement** (pages de collecte publiques), de les publier via un lien partageable, puis de suivre les **transactions** encaissées. La **banque** administre la plateforme (partenaires, moyens de paiement, audit) et les **caissières** encaissent en agence pour le compte d'un partenaire.
+First Collect permet à un **partenaire** (établissement, entreprise, association) de créer des **interfaces de paiement** (pages de collecte publiques), de les publier via un lien partageable, puis de suivre les **transactions** encaissées. La **banque** administre la plateforme (partenaires, moyens de paiement, audit) et les **caissières** encaissent en agence pour le compte d'un partenaire.
 
 Trois expériences coexistent :
 

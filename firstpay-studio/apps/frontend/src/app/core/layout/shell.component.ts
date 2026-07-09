@@ -42,9 +42,9 @@ const BREADCRUMB: Record<string, string> = {
     <div class="shell">
       <aside class="sidebar">
         <div class="brand">
-          <div class="logo">CCF</div>
+          <div class="logo">FC</div>
           <div>
-            <div class="brand-name">CASH COLLECT FIRST</div>
+            <div class="brand-name">FIRST COLLECT</div>
             <div class="brand-sub">{{ sideLabel() }}</div>
           </div>
         </div>

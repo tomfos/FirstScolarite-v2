@@ -4,7 +4,7 @@ import { PlatformApiService, PlatformSettings } from '../../core/api/platform-ap
 
 const EMPTY: PlatformSettings = {
   smtpHost: '', smtpPort: 587, smtpUsername: '', smtpPassword: '',
-  smtpFromEmail: '', smtpFromName: 'Cash collect First — Afriland First Bank',
+  smtpFromEmail: '', smtpFromName: 'First Collect — Afriland First Bank',
   smtpUseTls: true, smtpEnabled: false, appBaseUrl: 'http://localhost:14200', passwordSet: false,
   aggEnabled: false, aggMode: 'production',
   aggBaseUrl: 'https://mobilewallet.trustpayway.com', aggAppId: '', aggSecret: '', aggSecretSet: false,
@@ -24,7 +24,7 @@ const EMPTY: PlatformSettings = {
   template: `
     <div class="page">
       <div class="head">
-        <div class="eyebrow">Plateforme Cash collect First · Administration</div>
+        <div class="eyebrow">Plateforme First Collect · Administration</div>
         <div class="title">Paramètres plateforme</div>
         <div class="subtitle">Configuration SMTP et agrégateur de paiement mobile (TrustPayWay) pour les encaissements MTN / Orange Money.</div>
       </div>

@@ -1,4 +1,4 @@
-# Cash collect First — Documentation technique & d'architecture
+# First Collect — Documentation technique & d'architecture
 
 > Document de référence consolidé. Pour les détails par sujet, voir aussi
 > [`ARCHITECTURE.md`](ARCHITECTURE.md) (décisions perf), [`PHASES.md`](PHASES.md) (roadmap),
@@ -9,7 +9,7 @@
 
 ## 1. Présentation
 
-**Cash collect First** est le portail de paiement multi-partenaires d'**Afriland First Bank**.
+**First Collect** est le portail de paiement multi-partenaires d'**Afriland First Bank**.
 Des *partenaires* construisent sans code des **interfaces de paiement** (pages de collecte) ;
 les payeurs règlent via **Orange Money, MTN MoMo, carte ou virement** (avec QR). Le
 back-office banque supervise les partenaires, encaisse en agence (caisse) et audite la
