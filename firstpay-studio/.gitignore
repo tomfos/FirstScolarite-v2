@@ -2,6 +2,7 @@
 target/
 *.class
 .gradle/
+build/
 # Node / Angular
 node_modules/
 dist/
