@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cahier des charges — FirstPay Studio</title>
+<meta name="description" content="Cahier des charges de FirstPay Studio — portail de paiement multi-partenaires d'Afriland First Bank : périmètre, exigences fonctionnelles et non-fonctionnelles, architecture, livrables et recette.">
+<style>
+  :root{
+    --paper:#F7F8FA; --card:#FFFFFF; --ink:#1A1D21; --heading:#0F1526;
+    --accent:#E53935; --accent-2:#C62828; --accent-soft:#FDECEA;
+    --muted:#5A6270; --line:#ECEEF2; --line-strong:#D9DDE3;
+    --code-bg:#F2EFE9; --shadow:0 1px 2px rgba(15,23,42,.05),0 12px 28px -12px rgba(15,23,42,.12);
+    --ok:#1F9D55; --warn:#B7791F; --info:#2563EB;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --paper:#121319; --card:#1A1C24; --ink:#D4D7E0; --heading:#F3F5FA;
+      --accent:#F4586B; --accent-2:#FF7C8B; --accent-soft:#2A171C;
+      --muted:#9498A6; --line:#262933; --line-strong:#333743;
+      --code-bg:#20232C; --shadow:0 1px 2px rgba(0,0,0,.4),0 16px 34px -16px rgba(0,0,0,.6);
+      --ok:#39B57E; --warn:#E0A75A; --info:#6AA0FF;
+    }
+  }
+  :root[data-theme="light"]{
+    --paper:#F7F8FA; --card:#FFFFFF; --ink:#1A1D21; --heading:#0F1526;
+    --accent:#E53935; --accent-2:#C62828; --accent-soft:#FDECEA;
+    --muted:#5A6270; --line:#ECEEF2; --line-strong:#D9DDE3;
+    --code-bg:#F2EFE9; --shadow:0 1px 2px rgba(15,23,42,.05),0 12px 28px -12px rgba(15,23,42,.12);
+    --ok:#1F9D55; --warn:#B7791F; --info:#2563EB;
+  }
+  :root[data-theme="dark"]{
+    --paper:#121319; --card:#1A1C24; --ink:#D4D7E0; --heading:#F3F5FA;
+    --accent:#F4586B; --accent-2:#FF7C8B; --accent-soft:#2A171C;
+    --muted:#9498A6; --line:#262933; --line-strong:#333743;
+    --code-bg:#20232C; --shadow:0 1px 2px rgba(0,0,0,.4),0 16px 34px -16px rgba(0,0,0,.6);
+    --ok:#39B57E; --warn:#E0A75A; --info:#6AA0FF;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Inter","Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    font-size:16.5px;line-height:1.72;-webkit-font-smoothing:antialiased;
+    font-feature-settings:"kern","liga","cv05";}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+  .wrap{max-width:1200px;margin:0 auto;padding:0 24px;
+    display:grid;grid-template-columns:248px minmax(0,1fr);gap:52px;}
+  @media (max-width:1040px){.wrap{grid-template-columns:1fr;gap:0}.toc{display:none}}
+
+  /* ---- Table of contents ---- */
+  .toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;
+    padding:40px 0 40px;border-right:1px solid var(--line);}
+  .toc .brandmark{display:flex;align-items:center;gap:9px;margin-bottom:22px}
+  .toc .logo{width:26px;height:26px;border-radius:7px;flex:none;
+    background:linear-gradient(135deg,#E53935,#C62828);color:#fff;font-weight:800;
+    font-size:12px;display:flex;align-items:center;justify-content:center;letter-spacing:-.02em}
+  .toc .brandmark b{font-size:13px;letter-spacing:.02em;color:var(--heading)}
+  .toc nav{display:flex;flex-direction:column;gap:1px}
+  .toc a{color:var(--muted);text-decoration:none;font-size:13.5px;padding:5px 12px 5px 0;
+    border-left:2px solid transparent;padding-left:12px;transition:color .15s,border-color .15s}
+  .toc a:hover{color:var(--accent)}
+  .toc a.grp{color:var(--heading);font-weight:700;margin-top:16px;font-size:11px;
+    text-transform:uppercase;letter-spacing:.09em}
+  .toc a.grp:first-child{margin-top:0}
+  .toc a:focus-visible,.content a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+  .content{padding:40px 0 96px;min-width:0}
+
+  /* ---- Hero ---- */
+  .hero{border-left:4px solid var(--accent);padding:6px 0 30px 24px;margin-bottom:8px}
+  .hero .kicker{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  .hero h1{font-size:clamp(30px,4.6vw,46px);line-height:1.06;margin:.28em 0 .3em;
+    color:var(--heading);font-weight:800;letter-spacing:-.02em;text-wrap:balance;max-width:20ch}
+  .hero p.lead{font-size:18px;color:var(--muted);margin:0;max-width:62ch}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+  .meta .chip{font-size:12.5px;padding:5px 11px;border:1px solid var(--line-strong);border-radius:999px;
+    color:var(--ink);background:var(--card);display:inline-flex;gap:7px;align-items:center}
+  .meta .chip b{color:var(--heading)}
+
+  h2{font-size:26px;color:var(--heading);font-weight:800;letter-spacing:-.015em;
+    margin:64px 0 4px;padding-top:14px;scroll-margin-top:24px;text-wrap:balance}
+  h2 .lab{display:block;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);font-weight:700;margin-bottom:6px}
+  h3{font-size:18.5px;color:var(--heading);font-weight:700;margin:38px 0 2px;letter-spacing:-.01em}
+  .content p{max-width:72ch;margin:14px 0}
+  .content section > p:first-of-type{margin-top:10px}
+  strong{color:var(--heading);font-weight:700}
+  em{font-style:normal;color:var(--ink)}
+  a.inline{color:var(--accent);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+  code{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-size:.86em;
+    background:var(--code-bg);padding:.12em .42em;border-radius:5px;color:var(--heading)}
+  hr{border:none;border-top:1px solid var(--line);margin:56px 0 0}
+
+  ul.clean{max-width:72ch;margin:14px 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+  ul.clean li{position:relative;padding-left:20px}
+  ul.clean li::before{content:"";position:absolute;left:2px;top:.62em;width:6px;height:6px;
+    border-radius:50%;background:var(--accent)}
+  ul.clean li b{color:var(--heading)}
+
+  ol.steps{max-width:72ch;margin:16px 0;padding:0;list-style:none;counter-reset:s;
+    display:flex;flex-direction:column;gap:10px}
+  ol.steps li{position:relative;padding-left:44px;counter-increment:s}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:-1px;width:28px;height:28px;
+    border-radius:8px;background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:13px;
+    display:flex;align-items:center;justify-content:center}
+
+  /* callouts */
+  .note{max-width:72ch;margin:20px 0;border:1px solid var(--line);border-left:3px solid var(--accent);
+    background:color-mix(in srgb,var(--accent-soft) 60%,var(--card));border-radius:10px;padding:13px 16px;font-size:15px}
+  .note.tip{border-left-color:var(--ok);background:color-mix(in srgb,var(--ok) 8%,var(--card))}
+  .note.warn{border-left-color:var(--warn);background:color-mix(in srgb,var(--warn) 9%,var(--card))}
+  .note .t{font-weight:700;color:var(--heading);font-size:12px;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:2px}
+
+  /* tables */
+  .tablewrap{overflow-x:auto;margin:20px 0;border:1px solid var(--line);border-radius:12px}
+  table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:620px}
+  th,td{text-align:left;padding:11px 15px;border-bottom:1px solid var(--line);vertical-align:top}
+  thead th{background:color-mix(in srgb,var(--card) 80%,var(--paper));color:var(--heading);
+    font-size:11.5px;text-transform:uppercase;letter-spacing:.06em}
+  tbody tr:last-child td{border-bottom:none}
+  td b{color:var(--heading)}
+  .rolechip{display:inline-flex;align-items:center;gap:7px;font-weight:700;color:var(--heading);white-space:nowrap}
+  .rolechip .sw{width:10px;height:10px;border-radius:3px;flex:none}
+  .kbd{font-family:inherit;font-size:12.5px;border:1px solid var(--line-strong);border-bottom-width:2px;
+    border-radius:6px;padding:1px 7px;background:var(--card);color:var(--heading)}
+
+  /* requirement id + priority */
+  .rid{font-family:"SFMono-Regular",Consolas,monospace;font-size:12.5px;font-weight:700;color:var(--accent);white-space:nowrap}
+  .pri{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+  .pri.must{background:var(--accent);color:#fff}
+  .pri.should{background:var(--info);color:#fff}
+  .pri.could{background:var(--muted);color:#fff}
+  .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:999px}
+  .pill.ok{background:var(--ok);color:#fff}.pill.pend{background:var(--warn);color:#fff}.pill.fail{background:var(--accent);color:#fff}
+
+  /* SLO / metric grid */
+  .metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin:22px 0}
+  .metric{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--card);box-shadow:var(--shadow)}
+  .metric .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .metric .v{font-size:24px;font-weight:800;color:var(--heading);letter-spacing:-.02em;line-height:1.2;margin-top:2px}
+  .metric .d{font-size:12px;color:var(--muted);margin-top:2px}
+
+  /* architecture diagram frame */
+  figure.shot{margin:26px 0 8px}
+  .frame{border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;background:var(--card);box-shadow:var(--shadow)}
+  .frame .bar{display:flex;align-items:center;gap:6px;padding:9px 13px;border-bottom:1px solid var(--line);
+    background:color-mix(in srgb,var(--card) 82%,var(--paper))}
+  .frame .bar i{width:10px;height:10px;border-radius:50%;background:var(--line-strong);flex:none}
+  .frame .bar i:nth-child(1){background:#E5595F}.frame .bar i:nth-child(2){background:#E7B04B}.frame .bar i:nth-child(3){background:#4FB477}
+  .frame .bar em{margin-left:10px;font-size:12px;color:var(--muted);
+    background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:2px 10px}
+  figcaption{font-size:13.5px;color:var(--muted);margin-top:10px;padding-left:2px}
+  figcaption b{color:var(--heading)}
+
+  /* layered architecture mock */
+  .arch{padding:18px;display:flex;flex-direction:column;gap:12px}
+  .layer{border:1px solid var(--line);border-radius:10px;padding:11px 14px;background:color-mix(in srgb,var(--card) 90%,var(--paper))}
+  .layer .lk{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:7px}
+  .layer .items{display:flex;gap:8px;flex-wrap:wrap}
+  .box{border:1px solid var(--line-strong);border-radius:8px;padding:7px 12px;font-size:12.5px;font-weight:600;
+    color:var(--heading);background:var(--card);flex:1 1 auto;text-align:center;min-width:90px}
+  .box.acc{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+  .arch .flow{text-align:center;color:var(--muted);font-size:11px;letter-spacing:.1em}
+
+  .foot{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  .foot b{color:var(--heading)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <aside class="toc">
+    <div class="brandmark"><span class="logo">FP</span><b>FirstPay Studio — Cahier des charges</b></div>
+    <nav>
+      <a class="grp" href="#contexte">Cadrage</a>
+      <a href="#contexte">Contexte &amp; objectifs</a>
+      <a href="#perimetre">Périmètre</a>
+      <a href="#acteurs">Acteurs &amp; rôles</a>
+
+      <a class="grp" href="#fonctionnel">Exigences fonctionnelles</a>
+      <a href="#f-payeur">Parcours payeur</a>
+      <a href="#f-studio">Studio de paiement</a>
+      <a href="#f-tx">Transactions &amp; suivi</a>
+      <a href="#f-users">Utilisateurs &amp; paramètres</a>
+      <a href="#f-banque">Banque &amp; supervision</a>
+      <a href="#f-caisse">Caisse agence</a>
+
+      <a class="grp" href="#nonfonctionnel">Exigences non fonctionnelles</a>
+      <a href="#nf-perf">Performance &amp; SLO</a>
+      <a href="#nf-secu">Sécurité &amp; conformité</a>
+      <a href="#nf-dispo">Disponibilité &amp; résilience</a>
+      <a href="#nf-autres">Ergonomie, i18n, exploitation</a>
+
+      <a class="grp" href="#technique">Architecture</a>
+      <a href="#t-stack">Stack &amp; vue d'ensemble</a>
+      <a href="#t-decisions">Décisions clés</a>
+      <a href="#t-integrations">Intégrations paiement</a>
+
+      <a class="grp" href="#projet">Projet</a>
+      <a href="#livrables">Livrables &amp; phases</a>
+      <a href="#recette">Recette &amp; acceptation</a>
+      <a href="#glossaire">Glossaire</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <header class="hero">
+      <span class="kicker">Afriland First Bank · Spécifications</span>
+      <h1>Cahier des charges — FirstPay&nbsp;Studio</h1>
+      <p class="lead">Portail de paiement multi-partenaires : besoins, périmètre fonctionnel, exigences de performance et de sécurité, architecture cible et critères de recette.</p>
+      <div class="meta">
+        <span class="chip"><b>Projet</b> FirstPay Studio</span>
+        <span class="chip"><b>Maître d'ouvrage</b> Afriland First Bank</span>
+        <span class="chip"><b>Version</b> 1.0</span>
+        <span class="chip"><b>Statut</b> Référence d'implémentation</span>
+      </div>
+    </header>
+
+    <!-- ============ CONTEXTE ============ -->
+    <section id="contexte">
+      <h2><span class="lab">Cadrage</span>Contexte &amp; objectifs</h2>
+      <p><strong>FirstPay Studio</strong> est le portail de paiement multi-partenaires d'<strong>Afriland First Bank</strong>. Il permet à des partenaires (écoles, associations, commerces, ONG…) de construire des <strong>interfaces de paiement</strong> — des pages de collecte — <strong>sans écrire de code</strong>, et à leurs clients (les <strong>payeurs</strong>) de régler en quelques secondes via Orange Money, MTN MoMo, carte bancaire ou virement, avec QR code. Le <strong>back-office banque</strong> supervise les partenaires, encaisse en agence et audite la plateforme.</p>
+      <h3>Objectifs du projet</h3>
+      <ul class="clean">
+        <li><b>Autonomie des partenaires</b> — créer et publier une page de collecte en quelques minutes, sans intervention technique.</li>
+        <li><b>Encaissement omnicanal</b> — mobile money, carte, virement et espèces au guichet, avec une expérience payeur unifiée.</li>
+        <li><b>Supervision bancaire</b> — vue consolidée de tous les partenaires, réconciliation et journal d'audit.</li>
+        <li><b>Passage à l'échelle massif</b> — architecture conçue pour <strong>≥ 1 000 000 transactions / minute</strong> (~16 667 TPS), sans duplication.</li>
+      </ul>
+      <div class="note"><span class="t">Cible d'ingénierie</span>Débit ≥ 1M tx/min, latence P99 &lt; 100&nbsp;ms, disponibilité 99,99&nbsp;%, zéro duplication de transaction (idempotence stricte). Ces cibles conditionnent l'architecture (voir <a class="inline" href="#nf-perf">Performance &amp; SLO</a>).</div>
+    </section>
+
+    <!-- ============ PERIMETRE ============ -->
+    <section id="perimetre">
+      <h2><span class="lab">Cadrage</span>Périmètre</h2>
+      <h3>Inclus dans le périmètre</h3>
+      <ul class="clean">
+        <li><b>Studio de paiement</b> — éditeur guidé en 4 étapes pour créer, prévisualiser et publier des interfaces de paiement.</li>
+        <li><b>Pages de paiement publiques</b> — accessibles par lien court et QR code, aux couleurs de chaque partenaire.</li>
+        <li><b>Portail partenaire</b> — tableau de bord, transactions, utilisateurs &amp; rôles, paramètres.</li>
+        <li><b>Back-office banque</b> — console de supervision, gestion des partenaires, délégation, transactions plateforme, journal d'audit, paramètres plateforme.</li>
+        <li><b>Caisse agence</b> — encaissement en espèces au guichet avec reçu imprimable et historique.</li>
+        <li><b>API multi-tenant</b> — ingestion des transactions, idempotence, reporting temps réel.</li>
+      </ul>
+      <h3>Hors périmètre (à ce stade)</h3>
+      <ul class="clean">
+        <li>Comptabilité générale et rapprochement bancaire complet côté banque (au-delà de l'export et de la réconciliation fournis).</li>
+        <li>Contractualisation/KYC des partenaires (onboarding administratif traité en amont).</li>
+        <li>Application mobile native payeur (le parcours payeur est web/QR, sans installation).</li>
+      </ul>
+    </section>
+
+    <!-- ============ ACTEURS ============ -->
+    <section id="acteurs">
+      <h2><span class="lab">Cadrage</span>Acteurs &amp; rôles</h2>
+      <p>Deux « côtés » : la <strong>Banque</strong> et le <strong>Partenaire</strong>, plus le <strong>payeur</strong> anonyme côté public. L'accès aux écrans et aux actions est piloté par le <strong>rôle</strong> (contrôle d'accès basé sur des <em>scopes</em> portés par le JWT).</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Rôle</th><th>Côté</th><th>Responsabilité</th><th>Scopes principaux</th></tr></thead>
+          <tbody>
+            <tr><td><span class="rolechip"><span class="sw" style="background:#0F1115"></span>Administrateur Banque</span></td><td>Banque</td><td>Pilotage global, supervision, audit, délégation, remboursement.</td><td><code>*</code>, <code>partners.manage</code>, <code>audit.read</code>, <code>impersonate</code>, <code>tx.refund</code></td></tr>
+            <tr><td><span class="rolechip"><span class="sw" style="background:#7C3AED"></span>Caissière Agence</span></td><td>Banque</td><td>Encaissement espèces au guichet, impression des reçus.</td><td><code>caisse.use</code>, <code>tx.read.own</code>, <code>receipts.print</code></td></tr>
+            <tr><td><span class="rolechip"><span class="sw" style="background:#E53935"></span>Administrateur Partenaire</span></td><td>Partenaire</td><td>Gère tout l'espace du partenaire.</td><td><code>studio.*</code>, <code>tx.*</code>, <code>users.*</code>, <code>settings.*</code></td></tr>
+            <tr><td><span class="rolechip"><span class="sw" style="background:#2563EB"></span>Gestionnaire Partenaire</span></td><td>Partenaire</td><td>Crée/modifie les interfaces, suit et exporte les transactions.</td><td><code>studio.read/write</code>, <code>tx.read</code>, <code>tx.export</code></td></tr>
+            <tr><td><span class="rolechip"><span class="sw" style="background:#1F8A5B"></span>Comptable Partenaire</span></td><td>Partenaire</td><td>Consulte/exporte les transactions, lit les rapports.</td><td><code>tx.read</code>, <code>tx.export</code>, <code>reports.read</code></td></tr>
+            <tr><td><span class="rolechip"><span class="sw" style="background:#7C8493"></span>Lecture seule</span></td><td>Partenaire</td><td>Consulte studio et transactions, sans modification.</td><td><code>studio.read</code>, <code>tx.read</code></td></tr>
+            <tr><td><span class="rolechip"><span class="sw" style="background:#8A93A0"></span>Payeur</span></td><td>Public</td><td>Règle une interface publiée, sans compte.</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note tip"><span class="t">Délégation (impersonation)</span>Un <strong>Administrateur Banque</strong> peut « entrer » dans l'espace d'un partenaire pour l'assister : il agit alors comme <strong>Administrateur Partenaire</strong> borné à ce seul <code>tenant_id</code>. Chaque délégation est <strong>journalisée dans l'audit</strong>.</div>
+    </section>
+
+    <!-- ============ FONCTIONNEL ============ -->
+    <section id="fonctionnel">
+      <h2><span class="lab">Exigences fonctionnelles</span>Vue d'ensemble</h2>
+      <p>Les exigences fonctionnelles sont identifiées <code>EF-xxx</code> et priorisées selon <strong>MoSCoW</strong> : <span class="pri must">Must</span> indispensable, <span class="pri should">Should</span> important, <span class="pri could">Could</span> souhaitable. Chaque exigence est vérifiable en recette (voir <a class="inline" href="#recette">Recette</a>).</p>
+    </section>
+
+    <section id="f-payeur">
+      <h2><span class="lab">Fonctionnel</span>Parcours payeur (page de paiement)</h2>
+      <p>La page de paiement est vue par le <strong>client final</strong> : aucune installation, aucun compte. Il ouvre un lien (ou scanne un QR) et paie. La page reprend le <strong>nom, le logo et la couleur</strong> du partenaire.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>ID</th><th>Exigence</th><th>Priorité</th></tr></thead>
+          <tbody>
+            <tr><td><span class="rid">EF-101</span></td><td>Afficher une page de paiement de marque (nom, logo, couleur du partenaire) à partir d'un lien court <code>pay.firstpay.cm/{code}/{slug}</code> ou d'un QR code.</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-102</span></td><td>Gérer les trois modes de montant : <strong>fixe</strong>, <strong>préréglé</strong> (choix parmi des tarifs), <strong>libre</strong> (saisie avec min/max). Devise XAF.</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-103</span></td><td>Collecter la <strong>référence</strong> attendue (ex. matricule) et les <strong>champs personnalisés</strong> requis (texte / liste).</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-104</span></td><td>Proposer les méthodes activées : <strong>Orange Money</strong>, <strong>MTN MoMo</strong>, <strong>carte</strong>, <strong>virement</strong>, avec QR par méthode.</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-105</span></td><td>Refléter l'état en temps réel : <span class="pill pend">pending</span> → <span class="pill ok">success</span> / <span class="pill fail">failed</span>, puis afficher une confirmation avec numéro de transaction.</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-106</span></td><td>Interdire tout paiement sur une interface en <strong>brouillon</strong> ou supprimée.</td><td><span class="pri must">Must</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <figure class="shot">
+        <div class="frame">
+          <div class="bar"><i></i><i></i><i></i><em>pay.firstpay.cm/FSPAY_202605211633050082/frais-scolarite-2025</em></div>
+          <div style="padding:18px;display:flex;justify-content:center">
+            <div style="max-width:300px;width:100%;border:1px solid var(--line-strong);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);background:var(--card)">
+              <div style="background:linear-gradient(135deg,#E53935,#C62828);color:#fff;padding:14px 16px"><div style="font-weight:700">SOFT TECHNOLOGIES</div><div style="font-size:11.5px;opacity:.9">Frais de scolarité 2025-2026</div></div>
+              <div style="text-align:center;padding:16px;font-size:26px;font-weight:800;color:var(--heading);letter-spacing:-.02em">150&nbsp;000&nbsp;XAF</div>
+              <div style="display:flex;gap:8px;padding:0 16px 16px;flex-wrap:wrap">
+                <div style="flex:1 1 60px;border:1px solid var(--accent);color:var(--accent);background:var(--accent-soft);border-radius:9px;padding:8px;text-align:center;font-size:10.5px;font-weight:600">Orange</div>
+                <div style="flex:1 1 60px;border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:8px;text-align:center;font-size:10.5px;font-weight:600">MTN</div>
+                <div style="flex:1 1 60px;border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:8px;text-align:center;font-size:10.5px;font-weight:600">Carte</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <figcaption><b>Maquette — page de paiement publique.</b> Montant, méthodes activées et marque du partenaire.</figcaption>
+      </figure>
+    </section>
+
+    <section id="f-studio">
+      <h2><span class="lab">Fonctionnel</span>Studio de paiement</h2>
+      <p>Le <strong>Studio</strong> est le cœur du portail : création et gestion des interfaces de paiement via un <strong>éditeur guidé en 4 étapes</strong>, avec aperçu temps réel et publication.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>ID</th><th>Exigence</th><th>Priorité</th></tr></thead>
+          <tbody>
+            <tr><td><span class="rid">EF-201</span></td><td><b>Étape 1 — Infos</b> : nom, description, secteur, <em>slug</em> personnalisé (fin du lien public).</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-202</span></td><td><b>Étape 2 — Montant</b> : mode fixe / préréglé (multi-sélection) / libre (min-max), devise XAF.</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-203</span></td><td><b>Étape 3 — Référence &amp; champs</b> : type de référence (auto/personnalisée) et champs personnalisés (texte/liste, requis ou non).</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-204</span></td><td><b>Étape 4 — Méthodes</b> : activation par méthode et association d'un QR code par méthode.</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-205</span></td><td><b>Aperçu de publication</b> simulant le parcours payeur de bout en bout, puis passage <span class="pill pend">brouillon</span> → <span class="pill ok">actif</span>.</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-206</span></td><td><b>Partage</b> : lien court, QR imprimable, envoi par e-mail / WhatsApp / SMS.</td><td><span class="pri should">Should</span></td></tr>
+            <tr><td><span class="rid">EF-207</span></td><td><b>Suppression sécurisée</b> : validation progressive avec saisie d'un motif ; l'interface cesse d'accepter des paiements.</td><td><span class="pri should">Should</span></td></tr>
+            <tr><td><span class="rid">EF-208</span></td><td><b>Mode lecture seule</b> : les rôles Comptable et Lecture seule voient le Studio sans pouvoir modifier (<em>guard</em> <code>studio.write</code>).</td><td><span class="pri must">Must</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note"><span class="t">Exemples fournis</span>Trois interfaces d'exemple illustrent les modes : « Frais de scolarité 2025-2026 » (préréglé), « Cotisation tontine » (fixe), « Don campagne santé » (libre min-max).</div>
+    </section>
+
+    <section id="f-tx">
+      <h2><span class="lab">Fonctionnel</span>Transactions &amp; suivi</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>ID</th><th>Exigence</th><th>Priorité</th></tr></thead>
+          <tbody>
+            <tr><td><span class="rid">EF-301</span></td><td>Lister les transactions du partenaire en <strong>vue globale</strong> ou <strong>par interface</strong>, avec état (success/pending/failed).</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-302</span></td><td>Filtrer par interface, méthode, état, période ; rechercher par référence transaction ou payeur.</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-303</span></td><td>Mettre à jour les listes en <strong>temps réel</strong> (flux SSE) à mesure des paiements.</td><td><span class="pri should">Should</span></td></tr>
+            <tr><td><span class="rid">EF-304</span></td><td>Exporter les transactions filtrées (rôles Administrateur, Gestionnaire, Comptable).</td><td><span class="pri must">Must</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="f-users">
+      <h2><span class="lab">Fonctionnel</span>Utilisateurs &amp; paramètres</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>ID</th><th>Exigence</th><th>Priorité</th></tr></thead>
+          <tbody>
+            <tr><td><span class="rid">EF-401</span></td><td>Inviter des membres, attribuer un rôle partenaire, suivre leur statut (réservé à l'Administrateur Partenaire).</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-402</span></td><td>Personnaliser <strong>logo &amp; couleur de marque</strong>, appliqués aux pages de paiement publiques.</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-403</span></td><td>Importer des données clients pour pré-remplir des références (ex. liste d'élèves).</td><td><span class="pri should">Should</span></td></tr>
+            <tr><td><span class="rid">EF-404</span></td><td>Configurer les notifications <strong>e-mail / SMS</strong> par type d'événement (paiement reçu, échec…).</td><td><span class="pri should">Should</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="f-banque">
+      <h2><span class="lab">Fonctionnel</span>Banque &amp; supervision</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>ID</th><th>Exigence</th><th>Priorité</th></tr></thead>
+          <tbody>
+            <tr><td><span class="rid">EF-501</span></td><td><b>Console superviseur</b> : vue d'ensemble plateforme (volumes agrégés tous partenaires, santé du service, activité récente).</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-502</span></td><td><b>Partenaires</b> : liste et fiche, avec <strong>délégation (impersonation)</strong> vers un partenaire.</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-503</span></td><td><b>Transactions plateforme</b> : toutes transactions, filtre par partenaire/méthode/état/période (réconciliation centrale).</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-504</span></td><td><b>Remboursement</b> initiable par l'Administrateur Banque (<code>tx.refund</code>).</td><td><span class="pri should">Should</span></td></tr>
+            <tr><td><span class="rid">EF-505</span></td><td><b>Journal d'audit</b> <em>append-only</em> : connexions, délégations, changements de config, remboursements (aucune modification possible).</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-506</span></td><td><b>Paramètres plateforme</b> : réglages globaux et bascule <strong>sandbox / production</strong> de l'agrégateur depuis l'UI.</td><td><span class="pri must">Must</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note warn"><span class="t">Sandbox vs production</span>En sandbox, les paiements sont simulés (aucun mouvement réel). Le passage en production active les encaissements réels et doit être tracé dans l'audit.</div>
+    </section>
+
+    <section id="f-caisse">
+      <h2><span class="lab">Fonctionnel</span>Caisse agence</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>ID</th><th>Exigence</th><th>Priorité</th></tr></thead>
+          <tbody>
+            <tr><td><span class="rid">EF-601</span></td><td>Rechercher l'interface concernée, saisir la référence et le montant reçu (formulaire d'encaissement).</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-602</span></td><td>Enregistrer l'encaissement espèces comme transaction <span class="pill ok">success</span> via <code>POST /transactions</code>.</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-603</span></td><td>Produire un <strong>reçu imprimable</strong> (mise en page <code>@media print</code>) remis au client.</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">EF-604</span></td><td>Consulter l'<strong>historique</strong> du caissier et <strong>réimprimer</strong> un reçu (rapprochement de caisse).</td><td><span class="pri should">Should</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ NON FONCTIONNEL ============ -->
+    <section id="nonfonctionnel">
+      <h2><span class="lab">Exigences non fonctionnelles</span>Vue d'ensemble</h2>
+      <p>Les exigences non fonctionnelles (<code>ENF-xxx</code>) fixent les niveaux de service attendus. Elles sont dimensionnantes pour l'architecture et sont validées par les <strong>tests de charge</strong> et la <strong>recette SLO</strong>.</p>
+    </section>
+
+    <section id="nf-perf">
+      <h2><span class="lab">Non fonctionnel</span>Performance &amp; SLO</h2>
+      <div class="metrics">
+        <div class="metric"><div class="k">Débit maximum</div><div class="v">≥ 1M</div><div class="d">tx / minute (~16 667 TPS)</div></div>
+        <div class="metric"><div class="k">Latence P50</div><div class="v">&lt; 20 ms</div><div class="d">accusé de réception</div></div>
+        <div class="metric"><div class="k">Latence P99</div><div class="v">&lt; 100 ms</div><div class="d">en régime nominal</div></div>
+        <div class="metric"><div class="k">Taux d'erreur</div><div class="v">&lt; 0,01 %</div><div class="d">nominal</div></div>
+        <div class="metric"><div class="k">Disponibilité</div><div class="v">99,99 %</div><div class="d">SLA cible</div></div>
+        <div class="metric"><div class="k">RTO</div><div class="v">&lt; 30 s</div><div class="d">reprise après incident</div></div>
+        <div class="metric"><div class="k">Duplication</div><div class="v">0 %</div><div class="d">idempotence stricte</div></div>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>ID</th><th>Exigence</th><th>Priorité</th></tr></thead>
+          <tbody>
+            <tr><td><span class="rid">ENF-101</span></td><td>Soutenir <strong>≥ 1M tx/min</strong> via écriture asynchrone : accuser réception en <code>202 Accepted</code>, traiter en arrière-plan (Kafka).</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">ENF-102</span></td><td>Respecter <strong>P99 &lt; 100 ms</strong> nominal et <strong>P99 &lt; 500 ms sous burst ×5</strong>, erreurs &lt; 0,1 % (seuils tests de charge).</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">ENF-103</span></td><td>Garantir <strong>zéro duplication</strong> par idempotence à 3 niveaux (Redis, index DB unique, consommation Kafka idempotente).</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">ENF-104</span></td><td>Scaler horizontalement (HPA <code>min 5 / max 50</code> par service ; services <em>stateless</em>).</td><td><span class="pri must">Must</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="nf-secu">
+      <h2><span class="lab">Non fonctionnel</span>Sécurité &amp; conformité</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>ID</th><th>Exigence</th><th>Priorité</th></tr></thead>
+          <tbody>
+            <tr><td><span class="rid">ENF-201</span></td><td><strong>Isolation multi-tenant</strong> : <code>tenant_id</code> présent dans chaque table et chaque requête ; un partenaire est borné à son tenant, la banque traverse les tenants (<code>*</code>).</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">ENF-202</span></td><td><strong>Authentification</strong> : JWT portail (HS256) pour l'humain ; API-key hashée pour l'accès machine-à-machine partenaire.</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">ENF-203</span></td><td><strong>Autorisation</strong> par <em>scopes</em> vérifiés dans chaque service ; contrôle d'accès par rôle sur les écrans et actions.</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">ENF-204</span></td><td><strong>TLS partout</strong>, secrets via K8s Secrets / Vault ; jamais de secret en clair dans le code.</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">ENF-205</span></td><td><strong>Audit append-only</strong> (event store) et traçabilité horodatée des actions sensibles, dont la délégation.</td><td><span class="pri must">Must</span></td></tr>
+            <tr><td><span class="rid">ENF-206</span></td><td><strong>Rate limiting</strong> par tenant (défaut 10 000 req/s, configurable) et circuit breaker sur la passerelle de paiement.</td><td><span class="pri should">Should</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note tip"><span class="t">Revue de sécurité</span>Le durcissement s'appuie sur une revue dédiée (<code>docs/SECURITY-REVIEW.md</code>) et une chaîne CI de sécurité (npm audit, Trivy, contrôle de format).</div>
+    </section>
+
+    <section id="nf-dispo">
+      <h2><span class="lab">Non fonctionnel</span>Disponibilité &amp; résilience</h2>
+      <ul class="clean">
+        <li><b>Découplage asynchrone</b> — l'écriture rapide (202) et le traitement Kafka absorbent les pics sans perte.</li>
+        <li><b>Résilience</b> — Resilience4j (circuit breaker, retry+backoff), file de rejeu (DLQ <code>transactions.failed</code>).</li>
+        <li><b>Zéro-downtime</b> — PodDisruptionBudget + sondes readiness/liveness pour des déploiements sans interruption.</li>
+        <li><b>Séparation lecture/écriture</b> — read replicas PostgreSQL pour le reporting, sans impacter l'écriture.</li>
+      </ul>
+    </section>
+
+    <section id="nf-autres">
+      <h2><span class="lab">Non fonctionnel</span>Ergonomie, i18n &amp; exploitation</h2>
+      <ul class="clean">
+        <li><b>Design system</b> — respect strict des tokens (couleurs, rayons, ombres), typographie Inter, marque dynamique par partenaire.</li>
+        <li><b>Responsive &amp; accessibilité</b> — usage ordinateur et mobile ; focus visibles, contrastes suffisants.</li>
+        <li><b>Localisation</b> — langue <strong>fr-FR</strong>, devise <strong>XAF</strong>, format montants <code>toLocaleString('fr-FR')</code>.</li>
+        <li><b>Observabilité</b> — métriques par tenant (TPS, P50/P99, taux d'erreur) vers Prometheus/Grafana, tracing distribué OpenTelemetry → Jaeger.</li>
+      </ul>
+    </section>
+
+    <!-- ============ TECHNIQUE ============ -->
+    <section id="t-stack">
+      <h2><span class="lab">Architecture</span>Stack &amp; vue d'ensemble</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Couche</th><th>Technologie</th></tr></thead>
+          <tbody>
+            <tr><td>Frontend</td><td>Angular 21 (standalone, Signals, NgRx Signal Store), TypeScript, Vite</td></tr>
+            <tr><td>API Gateway</td><td>Spring Cloud Gateway (réactif) — auth, rate-limit, extraction tenant</td></tr>
+            <tr><td>Microservices</td><td>Spring Boot 3.x — WebFlux + R2DBC + Virtual Threads (Java 21)</td></tr>
+            <tr><td>Messaging</td><td>Apache Kafka (event-driven, exactly-once, outbox pattern)</td></tr>
+            <tr><td>Base de données</td><td>PostgreSQL 16 (partitionnement natif, PgBouncer, read replicas)</td></tr>
+            <tr><td>Cache / locks</td><td>Redis Cluster (cache L2, idempotency keys, rate limiting)</td></tr>
+            <tr><td>Observabilité</td><td>Micrometer + Prometheus + Grafana + OpenTelemetry/Jaeger</td></tr>
+            <tr><td>Déploiement</td><td>Docker + Kubernetes (Helm, HPA, Istio)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <figure class="shot">
+        <div class="frame">
+          <div class="bar"><i></i><i></i><i></i><em>FirstPay Studio · Architecture cible</em></div>
+          <div class="arch">
+            <div class="layer"><div class="lk">Accès</div><div class="items"><span class="box">Frontend Angular 21 (SPA)</span><span class="box">Partenaires REST / WS</span></div></div>
+            <div class="flow">▼</div>
+            <div class="layer"><div class="lk">Passerelle</div><div class="items"><span class="box acc">API Gateway — auth JWT / API-key · rate-limit · TenantExtractor</span></div></div>
+            <div class="flow">▼</div>
+            <div class="layer"><div class="lk">Services (WebFlux / R2DBC · Virtual Threads)</div><div class="items"><span class="box">transaction-svc<br><small>CQRS · Event Sourcing</small></span><span class="box">partner-svc<br><small>interfaces · tenants</small></span><span class="box">payment-svc<br><small>orchestration</small></span><span class="box">reporting-svc<br><small>read models</small></span></div></div>
+            <div class="flow">▼ outbox / projections</div>
+            <div class="layer"><div class="lk">Socle données &amp; messaging</div><div class="items"><span class="box">Kafka<br><small>12 partitions/topic</small></span><span class="box">PostgreSQL 16<br><small>partitionné · PgBouncer · replicas</small></span><span class="box">Redis Cluster<br><small>idempotence · cache · rate-limit</small></span></div></div>
+          </div>
+        </div>
+        <figcaption><b>Vue d'ensemble.</b> Écriture asynchrone : la Gateway accuse réception vite, Kafka porte le traitement lourd, le reporting lit sur réplicas.</figcaption>
+      </figure>
+    </section>
+
+    <section id="t-decisions">
+      <h2><span class="lab">Architecture</span>Décisions clés</h2>
+      <ul class="clean">
+        <li><b>Écriture asynchrone + Outbox</b> — <code>POST /transactions</code> : check idempotence Redis <code>SETNX</code>, <code>INSERT</code> transaction + <code>INSERT</code> outbox dans la <strong>même transaction SQL</strong>, puis <code>202</code>. Un poller relit l'outbox et publie sur Kafka (<em>at-least-once</em> + consommation idempotente = <em>exactly-once</em>).</li>
+        <li><b>CQRS + Event Sourcing</b> (transaction-service) — commandes <code>Create/Process/Refund</code> appendées dans <code>domain_events</code> (append-only), projections matérialisées côté reporting via Kafka.</li>
+        <li><b>PostgreSQL haute performance</b> — table <code>transactions</code> partitionnée par <code>RANGE(created_at)</code> (mensuel, pg_partman), index composites <code>(tenant_id, status, created_at DESC)</code>, PgBouncer <code>pool_mode=transaction</code> (max 5000 conn. clientes).</li>
+        <li><b>Kafka dimensionné</b> — 12 partitions par topic chaud, <code>acks=all</code>, <code>min.insync.replicas=2</code>, idempotence producteur, DLQ <code>transactions.failed</code>.</li>
+        <li><b>Réactif + Virtual Threads</b> — endpoints critiques WebFlux + R2DBC non bloquants, Java 21 virtual threads, ZGC générationnel pour des pauses GC sub-milliseconde.</li>
+      </ul>
+      <div class="note"><span class="t">Principe directeur</span><strong>Accuser réception vite, traiter de façon asynchrone.</strong> C'est ce découplage qui permet d'absorber ~16 667 TPS.</div>
+    </section>
+
+    <section id="t-integrations">
+      <h2><span class="lab">Architecture</span>Intégrations paiement</h2>
+      <p>Les encaissements passent par un <strong>agrégateur de moyens de paiement</strong> (TrustPayWay), avec bascule <strong>sandbox / production</strong> pilotable depuis l'UI admin.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Méthode</th><th>Canal</th><th>Poids typique</th></tr></thead>
+          <tbody>
+            <tr><td><b>Orange Money</b></td><td>Mobile money (USSD / app), QR</td><td>~40 %</td></tr>
+            <tr><td><b>MTN MoMo</b></td><td>Mobile money (USSD / app), QR</td><td>~35 %</td></tr>
+            <tr><td><b>Carte bancaire</b></td><td>Agrégateur (page de paiement)</td><td>~18 %</td></tr>
+            <tr><td><b>Virement</b></td><td>Transfert bancaire</td><td>~7 %</td></tr>
+            <tr><td><b>Espèces</b></td><td>Caisse agence (guichet)</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note warn"><span class="t">Robustesse des intégrations</span>Circuit breaker sur la passerelle, retry avec backoff, et DLQ pour les paiements en échec, avec rejeu manuel ou automatique. Un mauvais paramétrage de l'agrégateur ne doit jamais bloquer l'accusé de réception.</div>
+    </section>
+
+    <!-- ============ PROJET ============ -->
+    <section id="livrables">
+      <h2><span class="lab">Projet</span>Livrables &amp; phases</h2>
+      <p>Roadmap incrémentale : chaque phase est livrable, testable et déployable.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>#</th><th>Phase</th><th>Contenu principal</th><th>Statut</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>Fondations &amp; socle</td><td>Monorepo, docker-compose, CI/CD, conventions.</td><td><span class="pill ok">Livré</span></td></tr>
+            <tr><td>1</td><td>Données &amp; domaine</td><td>Migrations partitionnées, event/outbox, PgBouncer, domaine.</td><td><span class="pill ok">Livré</span></td></tr>
+            <tr><td>2</td><td>Cœur transaction (CQRS)</td><td>Event sourcing, idempotence, outbox, process/refund, IT.</td><td><span class="pill ok">Livré</span></td></tr>
+            <tr><td>3</td><td>Gateway &amp; multi-tenant</td><td>JWT + API-key, tenant, rate-limit, CORS.</td><td><span class="pill ok">Livré</span></td></tr>
+            <tr><td>4</td><td>Frontend — socle UI</td><td>Angular standalone, tokens, 6 rôles, login JWT, shell.</td><td><span class="pill ok">Livré</span></td></tr>
+            <tr><td>5</td><td>Frontend — Studio partenaire</td><td>Dashboard live, éditeur 4 étapes, aperçu, partage QR, écrans API.</td><td><span class="pill ok">Livré</span></td></tr>
+            <tr><td>6</td><td>Frontend — Banque &amp; Caisse</td><td>Console admin, partenaires + délégation, audit, caisse + reçu.</td><td><span class="pill ok">Livré</span></td></tr>
+            <tr><td>7</td><td>Messaging &amp; paiements</td><td>Traitement async, orchestration paiements.</td><td><span class="pill ok">Livré</span></td></tr>
+            <tr><td>8</td><td>Reporting &amp; projections</td><td>Read models, projections Kafka, exports.</td><td><span class="pill ok">Livré</span></td></tr>
+            <tr><td>9</td><td>Scalabilité &amp; observabilité</td><td>Helm/HPA/Istio, Prometheus/Grafana, OTel/Jaeger.</td><td><span class="pill ok">Livré</span></td></tr>
+            <tr><td>10</td><td>Tests de charge &amp; durcissement</td><td>Gatling burst/recovery, chaos, SLO, revue sécurité.</td><td><span class="pill pend">Scaffolding + runbooks</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note"><span class="t">Reste à exécuter</span>L'exécution de la campagne <strong>1M tx/min sur cluster</strong> (multi-injecteurs) est à lancer sur l'environnement cible.</div>
+    </section>
+
+    <section id="recette">
+      <h2><span class="lab">Projet</span>Recette &amp; critères d'acceptation</h2>
+      <p>La recette valide chaque exigence. Les critères clés :</p>
+      <ul class="clean">
+        <li><b>Fonctionnel</b> — chaque <code>EF-xxx</code> est démontrable de bout en bout (création d'interface → publication → paiement → suivi → export → encaissement caisse → reçu).</li>
+        <li><b>Performance</b> — tests de charge Gatling : 1M tx/min sur 10 partenaires, burst ×5, panne d'un service + recovery ; seuils P99 &lt; 500 ms sous burst, erreurs &lt; 0,1 %.</li>
+        <li><b>Résilience &amp; SLO</b> — scénarios chaos (<code>tests/chaos/</code>) et validation SLO automatisée (<code>tests/slo-recette/</code>).</li>
+        <li><b>Sécurité</b> — revue de sécurité passée, chaîne CI de sécurité au vert, aucun secret en clair.</li>
+        <li><b>Zéro duplication</b> — rejeux et doubles soumissions ne créent jamais de transaction dupliquée (idempotence vérifiée).</li>
+      </ul>
+      <div class="note tip"><span class="t">Environnements</span>Les configurations de déploiement (test, prod démo, prod minimal) sont décrites dans <code>docs/DEPLOIEMENT.md</code>.</div>
+    </section>
+
+    <section id="glossaire">
+      <h2><span class="lab">Projet</span>Glossaire</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Terme</th><th>Définition</th></tr></thead>
+          <tbody>
+            <tr><td><b>Interface de paiement</b></td><td>Page de collecte configurable créée dans le Studio et publiée à une URL publique.</td></tr>
+            <tr><td><b>Tenant</b></td><td>Partenaire isolé logiquement par <code>tenant_id</code> ; borne les données et les droits.</td></tr>
+            <tr><td><b>Délégation / Impersonation</b></td><td>Action d'un Administrateur Banque agissant temporairement comme Administrateur d'un partenaire, tracée à l'audit.</td></tr>
+            <tr><td><b>Idempotence</b></td><td>Garantie qu'une même demande n'engendre qu'une seule transaction, même en cas de rejeu.</td></tr>
+            <tr><td><b>Outbox pattern</b></td><td>Écriture de l'événement dans la même transaction SQL que la donnée, relue ensuite pour publication fiable sur Kafka.</td></tr>
+            <tr><td><b>CQRS</b></td><td>Séparation des chemins d'écriture (commandes) et de lecture (projections / read models).</td></tr>
+            <tr><td><b>SLO</b></td><td>Objectif de niveau de service (latence, disponibilité, taux d'erreur) mesurable et contractuel.</td></tr>
+            <tr><td><b>XAF</b></td><td>Franc CFA d'Afrique centrale — devise par défaut de la plateforme.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="foot">
+      <p><b>Cahier des charges — FirstPay Studio</b>, portail de paiement multi-partenaires d'<b>Afriland First Bank</b>. Document de référence pour l'implémentation&nbsp;; il synthétise le périmètre, les exigences et l'architecture cible. Voir aussi le <a class="inline" href="guide-utilisateur.html">Guide utilisateur</a>. Devise&nbsp;: <b>XAF</b> · Locale&nbsp;: <b>fr-FR</b>.</p>
+    </div>
+  </main>
+</div>
+</body>
+</html>
