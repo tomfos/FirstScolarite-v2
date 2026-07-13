@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: payhub
+      POSTGRES_USER: payhub
+      POSTGRES_PASSWORD: payhub
+    ports: ["5544:5432"]
+    volumes: ["payhub_pg:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payhub"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  payment-hub:
+    build: .
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+    environment:
+      R2DBC_URL: r2dbc:postgresql://postgres:5432/payhub
+      JDBC_URL: jdbc:postgresql://postgres:5432/payhub
+      DB_USER: payhub
+      DB_PASSWORD: payhub
+      REDIS_URL: redis://redis:6379
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8090}
+      PAYHUB_CRYPTO_SECRET: ${PAYHUB_CRYPTO_SECRET:-ZGV2LW9ubHktY2hhbmdlLW1lLTMyLWJ5dGVzLWtleSE=}
+    ports: ["8090:8090"]
+
+volumes:
+  payhub_pg:

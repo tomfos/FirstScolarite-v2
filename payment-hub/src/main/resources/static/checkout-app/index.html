@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paiement</title>
+  <style>
+    :root { --brand:#E53935; --bg:#f4f5f7; --card:#fff; --ink:#1f2430; --muted:#7c8493; --line:#e7e9ee; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--ink); }
+    .wrap { max-width:460px; margin:0 auto; padding:20px 16px 40px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:16px; overflow:hidden; box-shadow:0 6px 24px rgba(20,25,40,.06); }
+    .brand { background:var(--brand); color:#fff; padding:18px 20px; display:flex; align-items:center; gap:12px; }
+    .brand img { height:34px; width:auto; border-radius:6px; background:#fff; padding:2px; }
+    .brand h1 { font-size:16px; margin:0; font-weight:600; }
+    .body { padding:20px; }
+    .amount { text-align:center; margin:6px 0 18px; }
+    .amount .val { font-size:32px; font-weight:700; }
+    .amount .ref { color:var(--muted); font-size:13px; margin-top:4px; }
+    .label { font-size:13px; color:var(--muted); margin:16px 0 8px; font-weight:500; }
+    .methods { display:grid; gap:10px; }
+    .method { display:flex; align-items:center; gap:12px; padding:14px; border:1.5px solid var(--line); border-radius:12px; cursor:pointer; background:#fff; transition:.15s; font-size:15px; font-weight:500; }
+    .method:hover { border-color:var(--brand); }
+    .method.sel { border-color:var(--brand); background:#fff5f5; }
+    .method .dot { width:30px; height:30px; border-radius:8px; background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; text-transform:uppercase; }
+    input { width:100%; padding:12px 14px; border:1.5px solid var(--line); border-radius:10px; font-size:15px; margin-top:6px; }
+    input:focus { outline:none; border-color:var(--brand); }
+    button.pay { width:100%; margin-top:18px; padding:14px; border:0; border-radius:12px; background:var(--brand); color:#fff; font-size:16px; font-weight:600; cursor:pointer; }
+    button.pay:disabled { opacity:.5; cursor:not-allowed; }
+    .state { text-align:center; padding:30px 10px; }
+    .state .icon { font-size:44px; }
+    .state h2 { margin:12px 0 6px; }
+    .state p { color:var(--muted); margin:0; }
+    .spin { width:34px; height:34px; border:3px solid var(--line); border-top-color:var(--brand); border-radius:50%; animation:r 1s linear infinite; margin:0 auto; }
+    @keyframes r { to { transform:rotate(360deg); } }
+    .hidden { display:none; }
+    .foot { text-align:center; color:var(--muted); font-size:11px; margin-top:16px; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg:#0f1115; --card:#171a21; --ink:#e7e9ee; --muted:#8c93a1; --line:#262a33; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="brand"><span id="logo"></span><h1 id="appName">Paiement</h1></div>
+      <div class="body">
+        <div id="loading" class="state"><div class="spin"></div><p style="margin-top:14px">Chargement…</p></div>
+
+        <div id="form" class="hidden">
+          <div class="amount">
+            <div class="val" id="amount">—</div>
+            <div class="ref" id="ref"></div>
+          </div>
+          <div class="label">Choisissez un moyen de paiement</div>
+          <div class="methods" id="methods"></div>
+          <div id="phoneBox" class="hidden">
+            <div class="label">Numéro de téléphone (payeur)</div>
+            <input id="msisdn" inputmode="tel" placeholder="6XX XX XX XX">
+          </div>
+          <button class="pay" id="payBtn" disabled>Payer</button>
+        </div>
+
+        <div id="processing" class="state hidden">
+          <div class="spin"></div>
+          <h2 style="margin-top:16px">Paiement en cours…</h2>
+          <p id="procHint">Validez la demande sur votre téléphone.</p>
+        </div>
+
+        <div id="hosted" class="hidden">
+          <div class="label">Saisissez les informations de votre carte</div>
+          <div id="mpgs-embed"></div>
+        </div>
+
+        <div id="done" class="state hidden">
+          <div class="icon" id="doneIcon">✅</div>
+          <h2 id="doneTitle">Paiement réussi</h2>
+          <p id="doneMsg"></p>
+          <button class="pay hidden" id="returnBtn">Continuer</button>
+        </div>
+      </div>
+    </div>
+    <div class="foot">Paiement sécurisé — Payment Hub</div>
+  </div>
+  <script src="/checkout-app/checkout.js"></script>
+</body>
+</html>
