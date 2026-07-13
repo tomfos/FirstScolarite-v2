@@ -1,8 +1,0 @@
-target/
-*.class
-.idea/
-*.iml
-.env
-
-# Docs fournisseurs (contiennent des credentials réels/prod) — ne JAMAIS versionner.
-doc/
