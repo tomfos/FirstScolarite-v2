@@ -24,6 +24,7 @@ export const routes: Routes = [
       // Banque
       { path: 'admin_home', data: { module: 'admin_home' }, loadComponent: () => import('./features/admin/admin-home.component').then((m) => m.AdminHomeComponent) },
       { path: 'partners', data: { module: 'partners' }, loadComponent: () => import('./features/admin/partners.component').then((m) => m.PartnersComponent) },
+      { path: 'collections', data: { module: 'collections', scope: 'collections' }, loadComponent: () => import('./features/transactions/transactions.component').then((m) => m.TransactionsComponent) },
       { path: 'transactions_all', data: { module: 'transactions_all' }, loadComponent: () => import('./features/transactions/transactions.component').then((m) => m.TransactionsComponent) },
       { path: 'audit', data: { module: 'audit' }, loadComponent: () => import('./features/admin/audit.component').then((m) => m.AuditComponent) },
       { path: 'settings_platform', data: { module: 'settings_platform', scope: 'platform' }, loadComponent: () => import('./features/admin/platform-settings.component').then((m) => m.PlatformSettingsComponent) },

@@ -26,6 +26,7 @@ const NAV: NavItem[] = [
   { id: 'settings', label: 'Paramètres', roles: ['partner_admin'] },
   { id: 'admin_home', label: 'Tableau de bord', roles: ['bank_admin'] },
   { id: 'partners', label: 'Partenaires', roles: ['bank_admin'] },
+  { id: 'collections', label: 'Encaissements', roles: ['bank_admin'] },
   { id: 'transactions_all', label: 'Transactions plateforme', roles: ['bank_admin'] },
   { id: 'audit', label: "Journal d'audit", roles: ['bank_admin'] },
   { id: 'settings_platform', label: 'Paramètres plateforme', roles: ['bank_admin'] },
@@ -36,7 +37,7 @@ const NAV: NavItem[] = [
 const BREADCRUMB: Record<string, string> = {
   home: 'Tableau de bord', studio: 'Studio', transactions: 'Transactions', cards: 'Commande de cartes',
   users: 'Utilisateurs', settings: 'Paramètres', admin_home: 'Supervision', partners: 'Partenaires',
-  transactions_all: 'Transactions plateforme', audit: 'Audit',
+  collections: 'Encaissements', transactions_all: 'Transactions plateforme', audit: 'Audit',
   settings_platform: 'Paramètres plateforme', cashier: 'Caisse', cashier_history: 'Mes encaissements',
 };
 

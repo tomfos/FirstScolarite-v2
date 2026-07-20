@@ -9,7 +9,7 @@ import { METHOD_LABELS, Method } from '../../core/models/interface.model';
 import { AuthService } from '../../core/auth/auth.service';
 import { TransactionApiService } from '../../core/api/transaction-api.service';
 
-type TxScope = 'partner' | 'platform' | 'cashier';
+type TxScope = 'partner' | 'platform' | 'cashier' | 'collections';
 
 const STATUS_LABEL: Record<TxStatus, string> = { success: 'Succès', pending: 'En attente', failed: 'Échec' };
 const METHOD_COLOR: Record<Method, string> = { orange: '#FF7900', mtn: '#B89F00', card: '#2563EB', transfer: '#1F9D55' };
@@ -123,11 +123,19 @@ export class TransactionsComponent implements OnInit {
   readonly Math = Math;
 
   readonly scope = toSignal(this.route.data.pipe(map((d) => (d['scope'] as TxScope) ?? 'partner')), { initialValue: 'partner' as TxScope });
-  readonly title = computed(() => ({ partner: 'Mes transactions', platform: 'Transactions plateforme', cashier: 'Mes encaissements' })[this.scope()]);
-  readonly eyebrow = computed(() => ({ partner: 'Portail partenaire · Module', platform: 'Console superviseur · Module', cashier: 'Caisse agence · Module' })[this.scope()]);
+  readonly title = computed(() => ({
+    partner: 'Mes transactions', platform: 'Transactions plateforme',
+    cashier: 'Mes encaissements', collections: 'Encaissements',
+  })[this.scope()]);
+  readonly eyebrow = computed(() => ({
+    partner: 'Portail partenaire · Module', platform: 'Console superviseur · Module',
+    cashier: 'Caisse agence · Module', collections: 'Console superviseur · Module',
+  })[this.scope()]);
 
   private readonly platformTxs = signal<Transaction[]>([]);
   private readonly cashierTxs = signal<Transaction[]>([]);
+  /** Tous les encaissements caisse (toutes agences confondues) — supervision bank_admin. */
+  private readonly collectionsTxs = signal<Transaction[]>([]);
 
   readonly search = signal('');
   readonly interfaceId = signal('all');
@@ -143,6 +151,7 @@ export class TransactionsComponent implements OnInit {
     const days = this.range() === 'all' ? Infinity : +this.range() * 86400000;
     const source = this.scope() === 'platform' ? this.platformTxs()
       : this.scope() === 'cashier' ? this.cashierTxs()
+      : this.scope() === 'collections' ? this.collectionsTxs()
       : this.store.transactions();
     return source.filter((t) => {
       if (this.interfaceId() !== 'all' && t.interfaceId !== this.interfaceId()) return false;
@@ -156,18 +165,22 @@ export class TransactionsComponent implements OnInit {
 
   ngOnInit() {
     if (this.scope() === 'partner') this.store.loadFromApi();
-    if (this.scope() === 'platform' || this.scope() === 'cashier') {
+    if (this.scope() === 'platform' || this.scope() === 'cashier' || this.scope() === 'collections') {
       this.txApi.getAll().subscribe({
         next: (rows) => {
           const mapped = this.mapApiRows(rows);
           if (this.scope() === 'platform') this.platformTxs.set(mapped);
-          else {
+          else if (this.scope() === 'collections') {
+            // Tous les encaissements caisse, toutes agences/caissières confondues (supervision).
+            this.collectionsTxs.set(mapped.filter((t) => t.reference.startsWith('CASH-')));
+          } else {
             const uid = this.auth.user()?.id;
             this.cashierTxs.set(mapped.filter((t) => t.fields?.['cashierId'] === uid || t.reference.startsWith('CASH-')));
           }
         },
         error: () => {
           if (this.scope() === 'platform') this.platformTxs.set([]);
+          else if (this.scope() === 'collections') this.collectionsTxs.set([]);
           else this.cashierTxs.set([]);
         },
       });
