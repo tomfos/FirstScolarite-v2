@@ -3,18 +3,25 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet, NavigationEnd, Rout
 import { filter, map } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '../auth/auth.service';
-import { ROLES_CATALOG, RoleId } from '../auth/roles';
+import { ROLES_CATALOG, RoleId, PartnerType } from '../auth/roles';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { ThemeService } from '../theme/theme.service';
 import { StudioStore } from '../../features/studio/studio.store';
 import { ToastComponent } from '../../shared/components/toast.component';
 
-interface NavItem { id: string; label: string; roles: RoleId[]; }
+/**
+ * partnerTypes : filtre additionnel, orthogonal à `roles` — si présent, l'item n'est
+ * visible que pour les partenaires de ce(s) type(s) fonctionnel(s) (voir PartnerType).
+ * Absent = pas de restriction de type (comportement actuel pour tous les items banque
+ * et les items partenaire communs à tous les types).
+ */
+interface NavItem { id: string; label: string; roles: RoleId[]; partnerTypes?: PartnerType[]; }
 
 const NAV: NavItem[] = [
   { id: 'home', label: 'Tableau de bord', roles: ['partner_admin', 'partner_manager', 'partner_accountant', 'partner_viewer'] },
   { id: 'studio', label: 'Studio de paiement', roles: ['partner_admin', 'partner_manager', 'partner_viewer'] },
   { id: 'transactions', label: 'Transactions', roles: ['partner_admin', 'partner_manager', 'partner_accountant', 'partner_viewer'] },
+  { id: 'cards', label: 'Commande de cartes', roles: ['partner_admin', 'partner_manager'], partnerTypes: ['emf'] },
   { id: 'users', label: 'Utilisateurs', roles: ['partner_admin'] },
   { id: 'settings', label: 'Paramètres', roles: ['partner_admin'] },
   { id: 'admin_home', label: 'Tableau de bord', roles: ['bank_admin'] },
@@ -27,10 +34,10 @@ const NAV: NavItem[] = [
 ];
 
 const BREADCRUMB: Record<string, string> = {
-  home: 'Tableau de bord', studio: 'Studio', transactions: 'Transactions', users: 'Utilisateurs',
-  settings: 'Paramètres', admin_home: 'Supervision', partners: 'Partenaires',
-  transactions_all: 'Transactions plateforme', audit: 'Audit', settings_platform: 'Paramètres plateforme',
-  cashier: 'Caisse', cashier_history: 'Mes encaissements',
+  home: 'Tableau de bord', studio: 'Studio', transactions: 'Transactions', cards: 'Commande de cartes',
+  users: 'Utilisateurs', settings: 'Paramètres', admin_home: 'Supervision', partners: 'Partenaires',
+  transactions_all: 'Transactions plateforme', audit: 'Audit',
+  settings_platform: 'Paramètres plateforme', cashier: 'Caisse', cashier_history: 'Mes encaissements',
 };
 
 @Component({
@@ -134,7 +141,9 @@ export class ShellComponent implements OnInit {
   readonly roleDef = this.auth.roleDef;
   readonly items = computed(() => {
     const role = this.auth.effectiveRole();
-    return role ? NAV.filter((n) => n.roles.includes(role)) : [];
+    if (!role) return [];
+    const partnerType = this.auth.effectivePartnerType();
+    return NAV.filter((n) => n.roles.includes(role) && (!n.partnerTypes || (!!partnerType && n.partnerTypes.includes(partnerType))));
   });
   readonly sideLabel = computed(() => (this.auth.isBank() ? 'Console superviseur' : 'Portail partenaire'));
   readonly partner = computed(() =>

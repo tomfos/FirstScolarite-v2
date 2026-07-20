@@ -3,9 +3,9 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { AuthApiService } from '../../core/auth/auth-api.service';
-import { DEMO_ACCOUNTS, ROLES_CATALOG, Account, RoleId } from '../../core/auth/roles';
+import { DEMO_ACCOUNTS, ROLES_CATALOG, Account, RoleId, PartnerType } from '../../core/auth/roles';
 import { TenantContextService } from '../../core/tenant/tenant-context.service';
-import { demoApiKeyForPartner, demoTenantIdForPartner } from '../../core/auth/api-keys';
+import { demoApiKeyForPartner, demoTenantIdForPartner, DEMO_PARTNER_SHOWCASE } from '../../core/auth/api-keys';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -91,6 +91,7 @@ export class LoginComponent {
       const account: Account = {
         id: res.email, email: res.email, name: res.name, role,
         partnerName: cat.side === 'partner' ? res.partner : undefined,
+        partnerType: cat.side === 'partner' ? (res.partnerType as PartnerType) : undefined,
       };
       this.auth.login(account, res.token);
       if (res.tenantId) this.tenant.setTenantId(res.tenantId);
@@ -110,12 +111,8 @@ export class LoginComponent {
   loginDemo(acc: Account) {
     this.auth.login(acc);
     if (acc.partnerName) {
-      this.tenant.setPartner({
-        name: acc.partnerName,
-        code: acc.partnerName === 'SOFT TECHNOLOGIES' ? 'FSPAY_202605211633050082' : 'FSPAY_202604130910470215',
-        shortCode: acc.partnerName === 'SOFT TECHNOLOGIES' ? 'SOFT' : 'EPAL',
-        sector: acc.partnerName === 'SOFT TECHNOLOGIES' ? 'Fintech' : 'Éducation',
-      });
+      const showcase = DEMO_PARTNER_SHOWCASE[acc.partnerName];
+      if (showcase) this.tenant.setPartner({ name: acc.partnerName, ...showcase });
       this.tenant.setTenantId(demoTenantIdForPartner(acc.partnerName) ?? '');
       this.tenant.setApiKey(demoApiKeyForPartner(acc.partnerName));
     }

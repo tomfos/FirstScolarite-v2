@@ -247,7 +247,7 @@ export class CashierComponent implements OnInit {
     this.partnerApi.listPartners().subscribe({
       next: (list) => {
         this.partnerRows.set(list.map((d) => ({
-          name: d.name, code: d.code, shortCode: d.shortCode, sector: d.sector,
+          name: d.name, code: d.code, shortCode: d.shortCode, sector: d.sector, partnerType: d.partnerType,
           interfaces: d.interfaceCount, active: d.status === 'ACTIVE', tenantId: d.id,
         })));
       },

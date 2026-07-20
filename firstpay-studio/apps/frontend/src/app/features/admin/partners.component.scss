@@ -10,7 +10,7 @@
 .search input { flex: 1; border: none; outline: none; font-size: 14px; font-family: inherit; color: var(--text); }
 
 .table { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); }
-.thead, .trow { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 110px; padding: 14px 18px; align-items: center; }
+.thead, .trow { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 110px; padding: 14px 18px; align-items: center; }
 .thead { background: var(--surface-2); border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); font-weight: 700; }
 .trow { border-top: 1px solid var(--border); }
 .trow.alt { background: var(--surface-2); }

@@ -3,16 +3,27 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { PartnerRecord } from '../../core/models/partner.model';
 import { AuthService } from '../../core/auth/auth.service';
+import { PartnerType } from '../../core/auth/roles';
 import { TenantContextService } from '../../core/tenant/tenant-context.service';
 import { PartnerApiService } from '../../core/api/partner-api.service';
 import { AuditApiService } from '../../core/api/audit-api.service';
 
 interface Draft {
-  name: string; sector: string; adminName: string; adminEmail: string;
+  name: string; sector: string; partnerType: string; adminName: string; adminEmail: string;
   settlementAccount: string; accountHolder: string; settlementBank: string;
 }
 
 const SECTORS = ['Fintech', 'Éducation', 'ONG / Associatif', 'Commerce', 'Santé', 'Transport', 'Autre'];
+
+/**
+ * Type fonctionnel du partenaire (voir roles.ts PartnerType) : conditionne les
+ * modules qu'il verra à la connexion (ex. EMF -> commande de cartes). Séparé du
+ * secteur, qui reste une info descriptive libre.
+ */
+const PARTNER_TYPES = [
+  { value: 'standard', label: 'Standard' },
+  { value: 'emf', label: 'EMF' },
+];
 
 @Component({
   selector: 'fp-partners',
@@ -38,11 +49,12 @@ const SECTORS = ['Fintech', 'Éducation', 'ONG / Associatif', 'Commerce', 'Sant�
           <input [ngModel]="search()" (ngModelChange)="search.set($event)" placeholder="Rechercher par nom, code partenaire ou secteur…"></div>
 
         <div class="table">
-          <div class="thead"><div>Partenaire</div><div>Secteur</div><div>Interfaces</div><div>Statut</div><div></div></div>
+          <div class="thead"><div>Partenaire</div><div>Secteur</div><div>Type</div><div>Interfaces</div><div>Statut</div><div></div></div>
           @for (p of filtered(); track p.code; let i = $index) {
             <div class="trow" [class.alt]="i % 2 === 0">
               <div><div class="p-name">{{ p.name }}</div><div class="p-code mono">{{ p.code }}</div></div>
               <div class="muted">{{ p.sector }}</div>
+              <div class="muted">{{ partnerTypeLabel(p.partnerType) }}</div>
               <div>{{ p.interfaces }}</div>
               <div>
                 <span class="status" [class.active]="p.active">
@@ -92,10 +104,16 @@ const SECTORS = ['Fintech', 'Éducation', 'ONG / Associatif', 'Commerce', 'Sant�
                 @if (error()) { <div class="err">{{ error() }}</div> }
                 <label class="fld"><span>Nom du partenaire <i>*</i></span>
                   <input [ngModel]="d.name" (ngModelChange)="patch({ name: $event })" placeholder="Ex : Boulangerie Du Coin"></label>
-                <label class="fld"><span>Secteur</span>
-                  <select [ngModel]="d.sector" (ngModelChange)="patch({ sector: $event })">
-                    @for (s of sectors; track s) { <option [value]="s">{{ s }}</option> }
-                  </select></label>
+                <div class="two">
+                  <label class="fld"><span>Secteur</span>
+                    <select [ngModel]="d.sector" (ngModelChange)="patch({ sector: $event })">
+                      @for (s of sectors; track s) { <option [value]="s">{{ s }}</option> }
+                    </select></label>
+                  <label class="fld"><span>Type de partenaire</span>
+                    <select [ngModel]="d.partnerType" (ngModelChange)="patch({ partnerType: $event })">
+                      @for (t of partnerTypes; track t.value) { <option [value]="t.value">{{ t.label }}</option> }
+                    </select></label>
+                </div>
                 <div class="two">
                   <label class="fld"><span>Nom de l'administrateur</span>
                     <input [ngModel]="d.adminName" (ngModelChange)="patch({ adminName: $event })" placeholder="Ex : Awa Touré"></label>
@@ -135,6 +153,7 @@ export class PartnersComponent implements OnInit {
 
   readonly search = signal('');
   readonly sectors = SECTORS;
+  readonly partnerTypes = PARTNER_TYPES;
   private readonly rows = signal<PartnerRecord[]>([]);
 
   readonly draft = signal<Draft | null>(null);
@@ -152,7 +171,7 @@ export class PartnersComponent implements OnInit {
     this.partnerApi.listPartners().subscribe({
       next: (list) => {
         this.rows.set(list.map((d) => ({
-          name: d.name, code: d.code, shortCode: d.shortCode, sector: d.sector,
+          name: d.name, code: d.code, shortCode: d.shortCode, sector: d.sector, partnerType: d.partnerType,
           interfaces: d.interfaceCount, active: d.status === 'ACTIVE', tenantId: d.id,
         })));
       },
@@ -165,10 +184,14 @@ export class PartnersComponent implements OnInit {
     return this.rows().filter((p) => !q || p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || p.sector.toLowerCase().includes(q));
   });
 
+  partnerTypeLabel(value: string): string {
+    return this.partnerTypes.find((t) => t.value === value)?.label ?? value;
+  }
+
   // ---- Création ----
   openCreate() {
     this.error.set(''); this.createdKey.set(null); this.createdPassword.set(null); this.copied.set(false);
-    this.draft.set({ name: '', sector: 'Fintech', adminName: '', adminEmail: '', settlementAccount: '', accountHolder: '', settlementBank: '' });
+    this.draft.set({ name: '', sector: 'Fintech', partnerType: 'standard', adminName: '', adminEmail: '', settlementAccount: '', accountHolder: '', settlementBank: '' });
   }
   patch(p: Partial<Draft>) { const d = this.draft(); if (d) this.draft.set({ ...d, ...p }); }
   closeCreate() { this.draft.set(null); }
@@ -182,7 +205,7 @@ export class PartnersComponent implements OnInit {
         this.creating.set(false);
         const p = res.partner;
         this.rows.set([{
-          name: p.name, code: p.code, shortCode: p.shortCode, sector: p.sector,
+          name: p.name, code: p.code, shortCode: p.shortCode, sector: p.sector, partnerType: p.partnerType,
           interfaces: p.interfaceCount, active: true, tenantId: p.id,
         }, ...this.rows()]);
         this.createdKey.set(res.apiKey);
@@ -210,7 +233,7 @@ export class PartnersComponent implements OnInit {
         });
         this.tenant.setTenantId(res.tenantId);
         this.tenant.setApiKey(null);
-        this.auth.impersonate(p.name, res.token);
+        this.auth.impersonate(p.name, res.token, res.partnerType as PartnerType);
         this.audit.log('impersonate_start', 'partner', p.name, p.name, `Délégation banque → ${p.name}`).subscribe();
         this.router.navigate(['/home']);
       },

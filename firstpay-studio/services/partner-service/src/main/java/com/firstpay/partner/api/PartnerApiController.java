@@ -64,7 +64,8 @@ public class PartnerApiController {
     }
 
     public record ImpersonateResponse(String token, String tenantId, String partner,
-                                      String code, String shortCode, String sector, String tokenType) {}
+                                      String code, String shortCode, String sector, String partnerType,
+                                      String tokenType) {}
 
     /**
      * Émet un JWT de délégation (partner_admin) pour qu'un bank_admin ouvre le portail
@@ -84,11 +85,11 @@ public class PartnerApiController {
             .flatMap(t -> partners.listPartners()
                 .filter(p -> p.id().equals(t.id()))
                 .next()
-                .defaultIfEmpty(new PartnerDto(t.id(), t.code(), "", t.name(), "", "ACTIVE", 0))
+                .defaultIfEmpty(new PartnerDto(t.id(), t.code(), "", t.name(), "", "standard", "ACTIVE", 0))
                 .map(p -> {
-                    String token = jwt.issue(subject, t.id(), "partner_admin", t.name());
+                    String token = jwt.issue(subject, t.id(), "partner_admin", t.name(), p.partnerType());
                     return new ImpersonateResponse(token, t.id(), t.name(), t.code(),
-                        p.shortCode(), p.sector(), "Bearer");
+                        p.shortCode(), p.sector(), p.partnerType(), "Bearer");
                 }))
             .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Partenaire introuvable")));
     }

@@ -18,6 +18,7 @@ export const routes: Routes = [
       { path: 'home', data: { module: 'home' }, loadComponent: () => import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent) },
       { path: 'studio', data: { module: 'studio' }, loadComponent: () => import('./features/studio/studio.component').then((m) => m.StudioComponent) },
       { path: 'transactions', data: { module: 'transactions', scope: 'partner' }, loadComponent: () => import('./features/transactions/transactions.component').then((m) => m.TransactionsComponent) },
+      { path: 'cards', data: { module: 'cards', partnerTypes: ['emf'] }, loadComponent: () => import('./features/cards/cards.component').then((m) => m.CardsComponent) },
       { path: 'users', data: { module: 'users' }, loadComponent: () => import('./features/users/users.component').then((m) => m.UsersComponent) },
       { path: 'settings', data: { module: 'settings' }, loadComponent: () => import('./features/settings/settings.component').then((m) => m.SettingsComponent) },
       // Banque

@@ -13,6 +13,7 @@ export interface LoginResponse {
   code: string;
   shortCode: string;
   sector: string;
+  partnerType: string;
   tokenType: string;
 }
 

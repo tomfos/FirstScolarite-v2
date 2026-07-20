@@ -69,6 +69,7 @@ export interface PartnerListDto {
   shortCode: string;
   name: string;
   sector: string;
+  partnerType: string;
   status: string;
   interfaceCount: number;
 }
@@ -76,6 +77,7 @@ export interface PartnerListDto {
 export interface CreatePartnerRequest {
   name: string;
   sector: string;
+  partnerType: string;
   adminName: string;
   adminEmail: string;
   settlementAccount: string;
@@ -97,6 +99,7 @@ export interface ImpersonateResponse {
   code: string;
   shortCode: string;
   sector: string;
+  partnerType: string;
   tokenType: string;
 }
 

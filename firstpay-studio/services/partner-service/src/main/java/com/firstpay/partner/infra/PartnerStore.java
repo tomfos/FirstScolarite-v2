@@ -53,10 +53,12 @@ public class PartnerStore {
             String tempPassword = passwords.generateTempPassword();
             String passwordHash = passwords.hash(tempPassword);
             String sector = req.sector() != null ? req.sector() : "Autre";
+            String partnerType = notBlank(req.partnerType()) ? req.partnerType() : "standard";
 
             Map<String, Object> cfg = new LinkedHashMap<>();
             cfg.put("shortCode", shortCode);
             cfg.put("sector", sector);
+            cfg.put("partnerType", partnerType);
             if (notBlank(req.settlementAccount())) cfg.put("settlementAccount", req.settlementAccount());
             if (notBlank(req.accountHolder())) cfg.put("accountHolder", req.accountHolder());
             if (notBlank(req.settlementBank())) cfg.put("settlementBank", req.settlementBank());
@@ -96,7 +98,7 @@ public class PartnerStore {
                     """)
                 .bind("t", tenantId).fetch().rowsUpdated().then();
 
-            PartnerDto dto = new PartnerDto(tenantId.toString(), code, shortCode, req.name(), sector, "ACTIVE", 0);
+            PartnerDto dto = new PartnerDto(tenantId.toString(), code, shortCode, req.name(), sector, partnerType, "ACTIVE", 0);
             return insertTenant.then(insertAdmin).then(insertSettings)
                 .thenReturn(new CreatePartnerResponse(dto, apiKey, req.adminEmail(), tempPassword));
         });
@@ -156,6 +158,7 @@ public class PartnerStore {
                     String.valueOf(config.getOrDefault("shortCode", "")),
                     r.get("name", String.class),
                     String.valueOf(config.getOrDefault("sector", "")),
+                    String.valueOf(config.getOrDefault("partnerType", "standard")),
                     r.get("status", String.class),
                     r.get("iface_count", Long.class).intValue()
                 );
@@ -170,7 +173,8 @@ public class PartnerStore {
         return db.sql("""
                 SELECT u.id, u.name, u.email, u.role, u.status, u.password_hash,
                        t.id AS tenant_id, t.name AS partner_name, t.code AS tenant_code,
-                       t.config->>'shortCode' AS short_code, t.config->>'sector' AS sector
+                       t.config->>'shortCode' AS short_code, t.config->>'sector' AS sector,
+                       COALESCE(t.config->>'partnerType', 'standard') AS partner_type
                 FROM partner_users u
                 JOIN tenants t ON t.id = u.tenant_id
                 WHERE lower(u.email) = lower(:email) AND u.status = 'active'
@@ -187,12 +191,14 @@ public class PartnerStore {
                 r.get("tenant_code", String.class),
                 r.get("short_code", String.class),
                 r.get("sector", String.class),
+                r.get("partner_type", String.class),
                 r.get("password_hash", String.class)
             )).one();
     }
 
     public record LoginRow(String id, String name, String email, String role, String tenantId,
-                           String partner, String code, String shortCode, String sector, String passwordHash) {}
+                           String partner, String code, String shortCode, String sector, String partnerType,
+                           String passwordHash) {}
 
     /** Résout un tenant à partir du hash SHA-256 de son API-key (appel interne de la gateway). */
     public Mono<TenantResolution> resolveByApiKeyHash(String apiKeyHash) {

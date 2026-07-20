@@ -33,13 +33,16 @@ public final class Dtos {
         String establishment
     ) {}
 
-    public record PartnerDto(String id, String code, String shortCode, String name, String sector, String status, int interfaceCount) {}
+    public record PartnerDto(String id, String code, String shortCode, String name, String sector,
+                             String partnerType, String status, int interfaceCount) {}
 
     /**
      * Création d'un partenaire par l'administrateur banque.
      * settlementAccount = numéro du compte qui recevra les fonds collectés ; accountHolder = titulaire.
+     * partnerType = axe fonctionnel du partenaire (ex. "emf"), orthogonal au rôle hiérarchique de ses
+     * utilisateurs ; défaut "standard" si absent (voir {@link com.firstpay.partner.infra.PartnerStore}).
      */
-    public record CreatePartnerRequest(String name, String sector, String adminName, String adminEmail,
+    public record CreatePartnerRequest(String name, String sector, String partnerType, String adminName, String adminEmail,
                                        String settlementAccount, String accountHolder, String settlementBank) {}
 
     /** Réponse de création : le partenaire + l'API-key + les identifiants temporaires (affichés une fois). */
