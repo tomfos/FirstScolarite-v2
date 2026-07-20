@@ -121,6 +121,23 @@ public final class Dtos {
 
     public record SettingsDto(String tenantId, String logoUrl, String logoName, String brandColor, Map<String, Object> notifications) {}
 
+    /* ------------------------ Commandes de cartes prepayees (partenaires EMF) ------------------------ */
+
+    /**
+     * Commande de cartes prepayees : une simple quantite, pas de prix ni de type de carte.
+     * quantiteVendue/quantiteActivee sont de simples compteurs mis a jour par une action
+     * bank_admin (enregistrer-ventes) -- pas de pipeline d'activation individuelle par carte,
+     * cette plateforme n'a pas d'equivalent dossier KYC/client pour y accrocher ca.
+     * partnerName n'est renseigne que sur la vue banque (GET /card-orders/all).
+     */
+    public record CardOrderDto(String id, String tenantId, String partnerName, int quantite, String dateCommande,
+                               String statut, int quantiteVendue, int quantiteActivee) {}
+
+    public record CreateCardOrderRequest(int quantite) {}
+
+    /** Valeurs absolues (pas des deltas), bornees a la quantite commandee par le store. */
+    public record EnregistrerVentesRequest(int quantiteVendue, int quantiteActivee) {}
+
     /* ------------------------ Répertoire étudiants (matricule) ------------------------ */
 
     /**
