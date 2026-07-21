@@ -79,8 +79,8 @@ public class PartnerStore {
             Mono<Void> insertAdmin = (req.adminEmail() == null || req.adminEmail().isBlank())
                 ? Mono.empty()
                 : db.sql("""
-                    INSERT INTO partner_users (id, tenant_id, name, email, role, status, password_hash)
-                    VALUES (:id, :t, :name, :email, 'partner_admin', 'active', :pwd)
+                    INSERT INTO partner_users (id, tenant_id, name, email, role, status, password_hash, must_change_password)
+                    VALUES (:id, :t, :name, :email, 'partner_admin', 'active', :pwd, true)
                     """)
                     .bind("id", UUID.randomUUID()).bind("t", tenantId)
                     .bind("name", req.adminName() != null ? req.adminName() : "Administrateur")
@@ -144,11 +144,16 @@ public class PartnerStore {
         }
     }
 
+    /**
+     * Tous les partenaires, quel que soit leur statut (ACTIVE/SUSPENDU/SUPPRIME) : la console
+     * banque doit pouvoir retrouver un partenaire suspendu pour le reactiver, et voir qu'un
+     * partenaire supprime existe toujours (juste desactive, jamais efface - voir delete()).
+     */
     public Flux<PartnerDto> listPartners() {
         return db.sql("""
                 SELECT t.id, t.code, t.name, t.status, t.config,
                        (SELECT count(*) FROM payment_interfaces pi WHERE pi.tenant_id = t.id) AS iface_count
-                FROM tenants t WHERE t.status = 'ACTIVE' ORDER BY t.name
+                FROM tenants t ORDER BY t.name
                 """)
             .map(r -> {
                 Map<String, Object> config = parseConfig(r.get("config", String.class));
@@ -168,16 +173,18 @@ public class PartnerStore {
     /**
      * Recherche un membre par email (tous tenants) pour l'authentification du portail.
      * Renvoie l'utilisateur + le tenant auquel il appartient + le nom du partenaire.
+     * Le tenant doit etre ACTIVE : un partenaire suspendu ou supprime ne doit plus permettre
+     * a son equipe de se connecter, sinon desactiver un partenaire ne servirait a rien.
      */
     public Mono<LoginRow> findUserForLogin(String email) {
         return db.sql("""
-                SELECT u.id, u.name, u.email, u.role, u.status, u.password_hash,
+                SELECT u.id, u.name, u.email, u.role, u.status, u.password_hash, u.must_change_password,
                        t.id AS tenant_id, t.name AS partner_name, t.code AS tenant_code,
                        t.config->>'shortCode' AS short_code, t.config->>'sector' AS sector,
                        COALESCE(t.config->>'partnerType', 'standard') AS partner_type
                 FROM partner_users u
                 JOIN tenants t ON t.id = u.tenant_id
-                WHERE lower(u.email) = lower(:email) AND u.status = 'active'
+                WHERE lower(u.email) = lower(:email) AND u.status = 'active' AND t.status = 'ACTIVE'
                 LIMIT 1
                 """)
             .bind("email", email)
@@ -192,13 +199,14 @@ public class PartnerStore {
                 r.get("short_code", String.class),
                 r.get("sector", String.class),
                 r.get("partner_type", String.class),
-                r.get("password_hash", String.class)
+                r.get("password_hash", String.class),
+                Boolean.TRUE.equals(r.get("must_change_password", Boolean.class))
             )).one();
     }
 
     public record LoginRow(String id, String name, String email, String role, String tenantId,
                            String partner, String code, String shortCode, String sector, String partnerType,
-                           String passwordHash) {}
+                           String passwordHash, boolean mustChangePassword) {}
 
     /** Résout un tenant à partir du hash SHA-256 de son API-key (appel interne de la gateway). */
     public Mono<TenantResolution> resolveByApiKeyHash(String apiKeyHash) {
@@ -237,14 +245,30 @@ public class PartnerStore {
     }
 
     /**
-     * Suppression douce : passe le tenant hors du statut ACTIVE plutot que de le supprimer en
-     * base (transactions/commandes/messages y font reference sans contrainte de cle etrangere
-     * a rompre, mais un vrai DELETE romprait aussi la tracabilite). Reutilise le filtre ACTIVE
-     * deja en place partout (listPartners, resolution API-key, impersonation) : un partenaire
-     * supprime disparait automatiquement de tout ca, sans logique dupliquee.
+     * Suppression douce, DEFINITIVE en intention (mais reversible en base par un humain si
+     * vraiment necessaire) : passe le tenant a SUPPRIME plutot que de le supprimer en base
+     * (transactions/commandes/messages y font reference sans contrainte de cle etrangere a
+     * rompre pour la plupart, mais transactions.tenant_id a une VRAIE contrainte FK cote
+     * transaction-service - un DELETE reel serait de toute facon impossible des qu'une
+     * transaction existe, et casserait la tracabilite bancaire/d'audit sinon). Aucune table
+     * liee n'est jamais touchee : commandes de cartes, messages, transactions, journal d'audit
+     * restent intacts et consultables, seul le tenant disparait des operations courantes
+     * (login, impersonation, resolution API-key, listing par defaut - tous deja filtres sur
+     * ACTIVE ailleurs).
      */
     public Mono<Long> delete(UUID id) {
-        return db.sql("UPDATE tenants SET status = 'SUPPRIME', updated_at = now() WHERE id = :id AND status = 'ACTIVE'")
+        return db.sql("UPDATE tenants SET status = 'SUPPRIME', updated_at = now() WHERE id = :id AND status IN ('ACTIVE', 'SUSPENDU')")
+            .bind("id", id).fetch().rowsUpdated();
+    }
+
+    /** Desactivation REVERSIBLE (contrairement a delete()) : voir reactivate(). */
+    public Mono<Long> suspend(UUID id) {
+        return db.sql("UPDATE tenants SET status = 'SUSPENDU', updated_at = now() WHERE id = :id AND status = 'ACTIVE'")
+            .bind("id", id).fetch().rowsUpdated();
+    }
+
+    public Mono<Long> reactivate(UUID id) {
+        return db.sql("UPDATE tenants SET status = 'ACTIVE', updated_at = now() WHERE id = :id AND status = 'SUSPENDU'")
             .bind("id", id).fetch().rowsUpdated();
     }
 
@@ -265,10 +289,50 @@ public class PartnerStore {
             .one();
     }
 
+    /** Change le mot de passe et lève systématiquement l'obligation de le changer (forcée ou volontaire). */
     public Mono<Long> updatePassword(String email, String newHash) {
-        return db.sql("UPDATE partner_users SET password_hash = :h WHERE lower(email) = lower(:email)")
+        return db.sql("UPDATE partner_users SET password_hash = :h, must_change_password = false WHERE lower(email) = lower(:email)")
             .bind("h", newHash).bind("email", email)
             .fetch().rowsUpdated();
+    }
+
+    /** Résultat d'une réinitialisation réussie : de quoi composer l'email envoyé. */
+    public record ResetPasswordResult(String email, String name, String partnerName, String tempPassword) {}
+
+    /**
+     * "Mot de passe oublié" : génère un nouveau mot de passe temporaire et force son changement
+     * à la prochaine connexion (comme à la création). Mono.empty() si le compte n'existe pas,
+     * n'est pas actif, ou appartient à un tenant non-ACTIVE — l'appelant doit alors répondre de
+     * façon générique (voir AuthController) pour ne pas révéler l'existence d'un compte.
+     */
+    public Mono<ResetPasswordResult> resetPassword(String email) {
+        String tempPassword = passwords.generateTempPassword();
+        String hash = passwords.hash(tempPassword);
+        return db.sql("""
+                UPDATE partner_users u SET password_hash = :h, must_change_password = true
+                FROM tenants t
+                WHERE t.id = u.tenant_id AND lower(u.email) = lower(:email)
+                  AND u.status = 'active' AND t.status = 'ACTIVE'
+                RETURNING u.name AS user_name, u.email AS user_email, t.name AS partner_name
+                """)
+            .bind("h", hash).bind("email", email)
+            .map(r -> new ResetPasswordResult(
+                r.get("user_email", String.class),
+                r.get("user_name", String.class),
+                r.get("partner_name", String.class),
+                tempPassword
+            )).one()
+            .onErrorResume(e -> Mono.empty());
+    }
+
+    /** Régénère l'API-key d'un tenant (ex. bouton "Régénérer" en Sécurité) — renvoyée EN CLAIR une seule fois. */
+    public Mono<String> regenerateApiKey(UUID tenantId) {
+        String apiKey = "fpk_live_" + randomHex(24);
+        String hash = sha256(apiKey);
+        return db.sql("UPDATE tenants SET api_key_hash = :h, updated_at = now() WHERE id = :id AND status = 'ACTIVE'")
+            .bind("h", hash).bind("id", tenantId)
+            .fetch().rowsUpdated()
+            .flatMap(n -> n > 0 ? Mono.just(apiKey) : Mono.empty());
     }
 
     public Flux<UserDto> listUsers(UUID tenantId) {

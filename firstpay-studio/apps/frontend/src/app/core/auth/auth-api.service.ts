@@ -15,6 +15,7 @@ export interface LoginResponse {
   sector: string;
   partnerType: string;
   tokenType: string;
+  mustChangePassword: boolean;
 }
 
 /**
@@ -32,5 +33,12 @@ export class AuthApiService {
     return this.http
       .post<LoginResponse>(`${this.base}/api/v1/auth/login`, { email, password })
       .pipe(catchError(() => of(null)));
+  }
+
+  /** Demande un nouveau mot de passe par email. Réponse toujours "réussie" côté serveur (anti-énumération). */
+  forgotPassword(email: string): Observable<void> {
+    return this.http
+      .post<void>(`${this.base}/api/v1/auth/mot-de-passe-oublie`, { email })
+      .pipe(catchError(() => of(void 0)));
   }
 }

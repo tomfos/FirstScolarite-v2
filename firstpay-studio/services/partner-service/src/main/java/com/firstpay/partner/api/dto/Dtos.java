@@ -85,6 +85,12 @@ public final class Dtos {
 
     public record UserDto(String id, String name, String email, String role, String status) {}
 
+    /** Demande de réinitialisation ("mot de passe oublié") — email seul, réponse toujours générique. */
+    public record ForgotPasswordRequest(String email) {}
+
+    /** Nouvelle clé API générée (régénération), affichée une seule fois — même principe que CreatePartnerResponse. */
+    public record RegenerateApiKeyResponse(String apiKey) {}
+
     /** Marque du commerçant exposée à la page payeur publique (rien de sensible). */
     public record PublicMerchantDto(String name, String shortCode, String logoUrl, String brandColor) {}
 

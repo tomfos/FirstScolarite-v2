@@ -59,3 +59,7 @@ h1 { font-size: 44px; font-weight: 700; line-height: 1.05; letter-spacing: -.02e
 
 .sep { display: flex; align-items: center; gap: 12px; max-width: 440px; margin: 6px 0 14px; color: var(--text-3); font-size: 12px; }
 .sep::before, .sep::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.forgot-link { border: none; background: none; color: var(--text-2); font-size: 13px; font-weight: 600; text-align: left; padding: 0; cursor: pointer; }
+.forgot-link:hover { color: var(--fp-red); }
+.ok-banner { background: var(--green-soft); color: var(--green); border: 1px solid #C8E8D5; padding: 10px 14px; border-radius: 9px; font-size: 13px; font-weight: 600; margin-bottom: 14px; max-width: 440px; }

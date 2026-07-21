@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Output, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AccountApiService } from '../../core/api/account-api.service';
 
@@ -51,6 +51,9 @@ import { AccountApiService } from '../../core/api/account-api.service';
 export class ChangePasswordCardComponent {
   private readonly api = inject(AccountApiService);
 
+  /** Émis après un changement de mot de passe réussi (ex. sortie du parcours forcé). */
+  @Output() changed = new EventEmitter<void>();
+
   readonly current = signal('');
   readonly next = signal('');
   readonly confirm = signal('');
@@ -68,6 +71,7 @@ export class ChangePasswordCardComponent {
       next: () => {
         this.saving.set(false); this.success.set(true);
         this.current.set(''); this.next.set(''); this.confirm.set('');
+        this.changed.emit();
       },
       error: (err) => {
         this.saving.set(false);

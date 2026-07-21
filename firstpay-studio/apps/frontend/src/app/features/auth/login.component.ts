@@ -33,18 +33,37 @@ import { environment } from '../../../environments/environment';
 
       <div class="form-panel">
         <h2>Connexion</h2>
-        <p class="hint">Connectez-vous avec votre email et votre mot de passe.</p>
-        @if (error()) { <div class="error">{{ error() }}</div> }
 
-        <form class="login-form" (ngSubmit)="submit()">
-          <label class="fld"><span>Email</span>
-            <input type="email" name="email" [ngModel]="email()" (ngModelChange)="email.set($event)" placeholder="vous@entreprise.cm" autocomplete="username"></label>
-          <label class="fld"><span>Mot de passe</span>
-            <input type="password" name="password" [ngModel]="password()" (ngModelChange)="password.set($event)" placeholder="••••••••" autocomplete="current-password"></label>
-          <button class="submit" type="submit" [disabled]="loading() || !email()">{{ loading() ? 'Connexion…' : 'Se connecter' }}</button>
-        </form>
+        @if (!forgotMode()) {
+          <p class="hint">Connectez-vous avec votre email et votre mot de passe.</p>
+          @if (error()) { <div class="error">{{ error() }}</div> }
 
-        @if (showDemoAccounts) {
+          <form class="login-form" (ngSubmit)="submit()">
+            <label class="fld"><span>Email</span>
+              <input type="email" name="email" [ngModel]="email()" (ngModelChange)="email.set($event)" placeholder="vous@entreprise.cm" autocomplete="username"></label>
+            <label class="fld"><span>Mot de passe</span>
+              <input type="password" name="password" [ngModel]="password()" (ngModelChange)="password.set($event)" placeholder="••••••••" autocomplete="current-password"></label>
+            <button class="submit" type="submit" [disabled]="loading() || !email()">{{ loading() ? 'Connexion…' : 'Se connecter' }}</button>
+          </form>
+
+          <button class="forgot-link" type="button" (click)="openForgot()">Mot de passe oublié ?</button>
+        } @else {
+          <p class="hint">Indiquez votre email : si un compte y correspond, un nouveau mot de passe temporaire vous sera envoyé.</p>
+
+          @if (forgotSent()) {
+            <div class="ok-banner">✓ Si ce compte existe, un email avec un nouveau mot de passe vient d'être envoyé.</div>
+          } @else {
+            <form class="login-form" (ngSubmit)="sendForgot()">
+              <label class="fld"><span>Email</span>
+                <input type="email" name="forgotEmail" [ngModel]="forgotEmail()" (ngModelChange)="forgotEmail.set($event)" placeholder="vous@entreprise.cm" autocomplete="username"></label>
+              <button class="submit" type="submit" [disabled]="forgotSending() || !forgotEmail()">{{ forgotSending() ? 'Envoi…' : 'Recevoir un nouveau mot de passe' }}</button>
+            </form>
+          }
+
+          <button class="forgot-link" type="button" (click)="closeForgot()">← Retour à la connexion</button>
+        }
+
+        @if (showDemoAccounts && !forgotMode()) {
           <div class="sep"><span>Accès démo rapide</span></div>
           <div class="accounts">
             @for (acc of accounts; track acc.id) {
@@ -77,6 +96,11 @@ export class LoginComponent {
   readonly loading = signal(false);
   readonly error = signal('');
 
+  readonly forgotMode = signal(false);
+  readonly forgotEmail = signal('');
+  readonly forgotSending = signal(false);
+  readonly forgotSent = signal(false);
+
   /** Connexion réelle email + mot de passe (unifiée pour tous les profils). */
   submit() {
     const email = this.email().trim();
@@ -93,7 +117,7 @@ export class LoginComponent {
         partnerName: cat.side === 'partner' ? res.partner : undefined,
         partnerType: cat.side === 'partner' ? (res.partnerType as PartnerType) : undefined,
       };
-      this.auth.login(account, res.token);
+      this.auth.login(account, res.token, res.mustChangePassword);
       if (res.tenantId) this.tenant.setTenantId(res.tenantId);
       if (cat.side === 'partner' && res.partner) {
         this.tenant.setPartner({
@@ -103,7 +127,21 @@ export class LoginComponent {
           sector: res.sector ?? '',
         });
       }
-      this.router.navigate(['/', cat.home]);
+      // Mot de passe temporaire (création ou réinitialisation) : changement obligatoire avant tout accès.
+      this.router.navigate(res.mustChangePassword ? ['/changer-mot-de-passe'] : ['/', cat.home]);
+    });
+  }
+
+  openForgot() { this.forgotMode.set(true); this.forgotSent.set(false); this.forgotEmail.set(this.email()); }
+  closeForgot() { this.forgotMode.set(false); }
+
+  sendForgot() {
+    const email = this.forgotEmail().trim();
+    if (!email) return;
+    this.forgotSending.set(true);
+    this.authApi.forgotPassword(email).subscribe(() => {
+      this.forgotSending.set(false);
+      this.forgotSent.set(true);
     });
   }
 

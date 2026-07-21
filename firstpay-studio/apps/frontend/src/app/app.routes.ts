@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, moduleGuard } from './core/auth/auth.guard';
+import { authGuard, forceChangeGuard, moduleGuard } from './core/auth/auth.guard';
 import { ShellComponent } from './core/layout/shell.component';
 
 /**
@@ -9,9 +9,14 @@ import { ShellComponent } from './core/layout/shell.component';
 export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./features/auth/login.component').then((m) => m.LoginComponent) },
   {
+    path: 'changer-mot-de-passe',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/auth/force-password-change.component').then((m) => m.ForcePasswordChangeComponent),
+  },
+  {
     path: '',
     component: ShellComponent,
-    canActivate: [authGuard],
+    canActivate: [authGuard, forceChangeGuard],
     canActivateChild: [moduleGuard],
     children: [
       // Partenaire

@@ -14,6 +14,7 @@ export class AuthService {
   private readonly _impersonatedPartnerType = signal<PartnerType | undefined>(undefined);
   private readonly _token = signal<string | null>(null);
   private readonly _bankToken = signal<string | null>(null);
+  private readonly _mustChangePassword = signal(false);
 
   constructor() { this.restore(); }
 
@@ -44,19 +45,31 @@ export class AuthService {
 
   token() { return this._token(); }
 
-  login(account: Account, token: string | null = null) {
+  /** Vrai juste après une connexion avec un mot de passe temporaire (création ou réinitialisation) : le
+   * changement de mot de passe est alors obligatoire avant tout accès (voir forceChangeGuard). */
+  readonly mustChangePassword = this._mustChangePassword.asReadonly();
+
+  login(account: Account, token: string | null = null, mustChangePassword = false) {
     this._user.set(account);
     this._token.set(token);
+    this._mustChangePassword.set(mustChangePassword);
     this.persist();
   }
 
   setToken(token: string | null) { this._token.set(token); this.persist(); }
+
+  /** Levée une fois le mot de passe changé avec succès (voir ForcePasswordChangeComponent). */
+  clearMustChangePassword() {
+    this._mustChangePassword.set(false);
+    this.persist();
+  }
 
   logout() {
     this._user.set(null);
     this._impersonatedPartner.set(null);
     this._token.set(null);
     this._bankToken.set(null);
+    this._mustChangePassword.set(false);
     try { localStorage.removeItem(AUTH_KEY); } catch { /* ignore */ }
   }
 
@@ -90,6 +103,7 @@ export class AuthService {
         imp: this._impersonatedPartner(),
         impType: this._impersonatedPartnerType(),
         bankToken: this._bankToken(),
+        mustChangePassword: this._mustChangePassword(),
       }));
     } catch { /* stockage indisponible → session mémoire seulement */ }
   }
@@ -101,7 +115,7 @@ export class AuthService {
       if (!raw) return;
       const s = JSON.parse(raw) as {
         user: Account | null; token: string | null; imp: string | null;
-        impType?: PartnerType; bankToken: string | null;
+        impType?: PartnerType; bankToken: string | null; mustChangePassword?: boolean;
       };
       if (!s?.user) return;
       if (isJwtExpired(s.token) || isJwtExpired(s.bankToken)) {
@@ -113,6 +127,7 @@ export class AuthService {
       this._impersonatedPartner.set(s.imp ?? null);
       this._impersonatedPartnerType.set(s.impType);
       this._bankToken.set(s.bankToken ?? null);
+      this._mustChangePassword.set(s.mustChangePassword ?? false);
     } catch { /* données corrompues → session vierge */ }
   }
 

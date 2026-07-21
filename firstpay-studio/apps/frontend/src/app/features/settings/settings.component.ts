@@ -6,6 +6,7 @@ import { map } from 'rxjs';
 import { BRAND_PALETTE, NOTIF_EVENTS, SettingsStore } from './settings.store';
 import { TenantContextService } from '../../core/tenant/tenant-context.service';
 import { ChangePasswordCardComponent } from '../../shared/components/change-password-card.component';
+import { PartnerApiService } from '../../core/api/partner-api.service';
 
 type Section = 'brand' | 'import' | 'security' | 'notifications' | 'platform';
 
@@ -81,8 +82,11 @@ type Section = 'brand' | 'import' | 'security' | 'notifications' | 'platform';
                 <div class="sec-row"><div><div class="sec-name">Authentification à deux facteurs (2FA)</div><div class="sec-desc">Renforce la connexion de votre équipe.</div></div>
                   <label class="switch"><input type="checkbox" [checked]="twofa()" (change)="twofa.set($any($event.target).checked)"><span class="slider"></span></label></div>
                 <div class="sec-row"><div><div class="sec-name">Clé API partenaire</div><div class="sec-desc mono">fpk_live_••••••••••••3a7f</div></div>
-                  <button class="ghost" (click)="rotated.set(true)">Régénérer</button></div>
-                @if (rotated()) { <div class="ok-banner">✓ Une nouvelle clé API a été générée et envoyée par email.</div> }
+                  <button class="ghost" [disabled]="regenerating()" (click)="regenerateApiKey()">{{ regenerating() ? 'Génération…' : 'Régénérer' }}</button></div>
+                @if (newApiKey()) {
+                  <div class="ok-banner">✓ Nouvelle clé générée — copiez-la maintenant, elle ne sera plus jamais affichée :<br><span class="mono key-value">{{ newApiKey() }}</span></div>
+                }
+                @if (regenerateError()) { <div class="err-banner">{{ regenerateError() }}</div> }
                 <div class="sec-row"><div><div class="sec-name">Sessions actives</div><div class="sec-desc">2 appareils connectés.</div></div>
                   <button class="ghost danger">Tout déconnecter</button></div>
               </div>
@@ -130,6 +134,7 @@ export class SettingsComponent implements OnInit {
   readonly store = inject(SettingsStore);
   private readonly tenant = inject(TenantContextService);
   private readonly route = inject(ActivatedRoute);
+  private readonly partnerApi = inject(PartnerApiService);
 
   readonly isPlatform = toSignal(this.route.data.pipe(map((d) => d['scope'] === 'platform')), { initialValue: false });
   readonly sections = computed(() => this.isPlatform()
@@ -150,7 +155,9 @@ export class SettingsComponent implements OnInit {
   readonly section = signal<Section>('brand');
   readonly importMsg = signal<string | null>(null);
   readonly twofa = signal(false);
-  readonly rotated = signal(false);
+  readonly regenerating = signal(false);
+  readonly newApiKey = signal<string | null>(null);
+  readonly regenerateError = signal('');
   readonly rateLimit = signal(1200);
   readonly payloadKb = signal(256);
   readonly maintenance = signal(false);
@@ -158,6 +165,14 @@ export class SettingsComponent implements OnInit {
   readonly saved = signal(false);
 
   savePlatform() { this.saved.set(true); setTimeout(() => this.saved.set(false), 3000); }
+
+  regenerateApiKey() {
+    this.regenerating.set(true); this.regenerateError.set(''); this.newApiKey.set(null);
+    this.partnerApi.regenerateApiKey().subscribe({
+      next: (res) => { this.regenerating.set(false); this.newApiKey.set(res.apiKey); },
+      error: () => { this.regenerating.set(false); this.regenerateError.set('Échec de la régénération de la clé API.'); },
+    });
+  }
 
   onLogo(e: Event) {
     const file = (e.target as HTMLInputElement).files?.[0];

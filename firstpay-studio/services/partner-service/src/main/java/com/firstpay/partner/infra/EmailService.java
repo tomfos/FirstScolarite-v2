@@ -70,6 +70,43 @@ public class EmailService {
     }
 
     /**
+     * Email de réinitialisation ("mot de passe oublié") : nouveau mot de passe temporaire,
+     * changement obligatoire à la prochaine connexion — même contenu que la connexion initiale,
+     * objet distinct pour ne pas laisser croire à un nouveau compte.
+     */
+    public Mono<Boolean> sendPasswordResetEmail(String toEmail, String toName, String partnerName,
+                                                String tempPassword, String requestBaseUrl) {
+        if (toEmail == null || toEmail.isBlank()) return Mono.just(false);
+        return platform.getRaw().flatMap(cfg -> {
+            if (!cfg.smtpEnabled() || cfg.smtpHost() == null || cfg.smtpHost().isBlank()) {
+                log.info("SMTP désactivé/non configuré — email de réinitialisation à {} non envoyé.", toEmail);
+                return Mono.just(false);
+            }
+            String subject = "Nouveau mot de passe — portail FirstPay";
+            String portalUrl = resolvePortalUrl(requestBaseUrl, cfg.appBaseUrl());
+            String body = """
+                Bonjour %s,
+
+                Une réinitialisation de mot de passe a été demandée pour votre compte du portail
+                FirstPay (partenaire « %s »).
+
+                Accédez au portail : %s
+
+                Nouveau mot de passe temporaire : %s
+
+                Vous devrez le modifier immédiatement après votre prochaine connexion.
+
+                Si vous n'êtes pas à l'origine de cette demande, contactez votre administrateur.
+
+                — L'équipe FirstPay, Afriland First Bank
+                """.formatted(toName == null ? "" : toName, partnerName, portalUrl, tempPassword);
+            return Mono.fromCallable(() -> { send(cfg, toEmail, subject, body); return true; })
+                .subscribeOn(Schedulers.boundedElastic())
+                .onErrorResume(e -> { log.warn("Échec d'envoi email de réinitialisation à {} : {}", toEmail, e.getMessage()); return Mono.just(false); });
+        });
+    }
+
+    /**
      * Email envoyé à un partenaire quand la banque lui adresse un message via le module
      * Messages (ciblé ou diffusé à tous) — même circuit SMTP best-effort que la connexion.
      */
