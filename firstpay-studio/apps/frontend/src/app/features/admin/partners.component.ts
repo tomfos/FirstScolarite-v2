@@ -53,8 +53,14 @@ const PARTNER_TYPES = [
         <div class="search"><span>⌕</span>
           <input [ngModel]="search()" (ngModelChange)="search.set($event)" placeholder="Rechercher par nom, code partenaire ou secteur…"></div>
 
-        <div class="table">
-          <div class="thead"><div>Partenaire</div><div>Secteur</div><div>Type</div><div>Interfaces</div><div>Statut</div><div></div></div>
+        <div class="filters">
+          @for (f of statusChips; track f.id) {
+            <button class="chip" [class.on]="statusFilter() === f.id" (click)="statusFilter.set(f.id)">{{ f.label }}</button>
+          }
+        </div>
+
+        <div class="table-scroll"><div class="table">
+          <div class="thead"><div>Partenaire</div><div>Secteur</div><div>Type</div><div>Interfaces</div><div>Statut</div><div>Actions</div></div>
           @for (p of filtered(); track p.code; let i = $index) {
             <div class="trow" [class.alt]="i % 2 === 0">
               <div><div class="p-name">{{ p.name }}</div><div class="p-code mono">{{ p.code }}</div></div>
@@ -67,17 +73,27 @@ const PARTNER_TYPES = [
               </div>
               <div>{{ p.interfaces }}</div>
               <div>
-                <span class="status" [class.active]="p.active">
-                  <span class="dot"></span>{{ p.active ? 'Actif' : 'Suspendu' }}
+                <span class="status" [class]="statusClass(p.status)">
+                  <span class="dot"></span>{{ statusLabel(p.status) }}
                 </span>
               </div>
               <div class="actions">
-                <button class="mini" [disabled]="!p.active" (click)="impersonate(p)" title="Se connecter en son nom">◉ Ouvrir</button>
-                <button class="mini danger" (click)="deletePartner(p)" title="Supprimer">🗑</button>
+                @if (p.status === 'ACTIVE') {
+                  <button class="mini" (click)="impersonate(p)" title="Se connecter en son nom">◉ Ouvrir</button>
+                  <button class="mini ghost" [disabled]="busyId() === p.tenantId" (click)="suspendPartner(p)">Désactiver</button>
+                  <button class="mini danger" [disabled]="busyId() === p.tenantId" (click)="deletePartner(p)">Supprimer</button>
+                }
+                @if (p.status === 'SUSPENDU') {
+                  <button class="mini ghost" [disabled]="busyId() === p.tenantId" (click)="reactivatePartner(p)">Réactiver</button>
+                  <button class="mini danger" [disabled]="busyId() === p.tenantId" (click)="deletePartner(p)">Supprimer</button>
+                }
+                @if (p.status === 'SUPPRIME') {
+                  <span class="muted">—</span>
+                }
               </div>
             </div>
           }
-        </div>
+        </div></div>
       </div>
 
       <!-- Modale : création d'un partenaire -->
@@ -168,6 +184,12 @@ export class PartnersComponent implements OnInit {
   readonly partnerTypes = PARTNER_TYPES;
   private readonly rows = signal<PartnerRecord[]>([]);
 
+  readonly statusFilter = signal<'all' | 'ACTIVE' | 'SUSPENDU' | 'SUPPRIME'>('all');
+  readonly statusChips: { id: 'all' | 'ACTIVE' | 'SUSPENDU' | 'SUPPRIME'; label: string }[] = [
+    { id: 'all', label: 'Tous' }, { id: 'ACTIVE', label: 'Actifs' },
+    { id: 'SUSPENDU', label: 'Suspendus' }, { id: 'SUPPRIME', label: 'Supprimés' },
+  ];
+
   readonly draft = signal<Draft | null>(null);
   readonly creating = signal(false);
   readonly createdKey = signal<string | null>(null);
@@ -185,16 +207,26 @@ export class PartnersComponent implements OnInit {
       next: (list) => {
         this.rows.set(list.map((d) => ({
           name: d.name, code: d.code, shortCode: d.shortCode, sector: d.sector, partnerType: d.partnerType,
-          interfaces: d.interfaceCount, active: d.status === 'ACTIVE', tenantId: d.id,
+          interfaces: d.interfaceCount, active: d.status === 'ACTIVE', status: d.status, tenantId: d.id,
         })));
       },
       error: () => this.listError.set('Impossible de charger la liste des partenaires.'),
     });
   }
 
+  statusLabel(status: string): string {
+    return ({ ACTIVE: 'Actif', SUSPENDU: 'Suspendu', SUPPRIME: 'Supprimé' } as Record<string, string>)[status] ?? status;
+  }
+  statusClass(status: string): string {
+    return ({ ACTIVE: 'active', SUSPENDU: 'suspendu', SUPPRIME: 'supprime' } as Record<string, string>)[status] ?? '';
+  }
+
   readonly filtered = computed(() => {
     const q = this.search().toLowerCase();
-    return this.rows().filter((p) => !q || p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || p.sector.toLowerCase().includes(q));
+    const status = this.statusFilter();
+    return this.rows().filter((p) =>
+      (status === 'all' || p.status === status) &&
+      (!q || p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || p.sector.toLowerCase().includes(q)));
   });
 
   async exportExcel() {
@@ -250,15 +282,50 @@ export class PartnersComponent implements OnInit {
     });
   }
 
+  readonly busyId = signal<string | null>(null);
+
+  private setStatus(tenantId: string, status: string) {
+    this.rows.set(this.rows().map((r) => (r.tenantId === tenantId ? { ...r, status, active: status === 'ACTIVE' } : r)));
+  }
+
+  suspendPartner(p: PartnerRecord) {
+    if (!p.tenantId) return;
+    if (!confirm(`Désactiver « ${p.name} » ? Réversible à tout moment via « Réactiver ».`)) return;
+    this.busyId.set(p.tenantId);
+    this.partnerApi.suspendPartner(p.tenantId).subscribe({
+      next: () => {
+        this.busyId.set(null);
+        this.setStatus(p.tenantId!, 'SUSPENDU');
+        this.audit.log('partner_suspend', 'partner', p.name, p.name, `Désactivation du partenaire ${p.name}`).subscribe();
+      },
+      error: () => { this.busyId.set(null); this.error.set(`Échec de la désactivation de ${p.name}.`); },
+    });
+  }
+
+  reactivatePartner(p: PartnerRecord) {
+    if (!p.tenantId) return;
+    this.busyId.set(p.tenantId);
+    this.partnerApi.reactivatePartner(p.tenantId).subscribe({
+      next: () => {
+        this.busyId.set(null);
+        this.setStatus(p.tenantId!, 'ACTIVE');
+        this.audit.log('partner_reactivate', 'partner', p.name, p.name, `Réactivation du partenaire ${p.name}`).subscribe();
+      },
+      error: () => { this.busyId.set(null); this.error.set(`Échec de la réactivation de ${p.name}.`); },
+    });
+  }
+
   deletePartner(p: PartnerRecord) {
     if (!p.tenantId) return;
-    if (!confirm(`Supprimer le partenaire « ${p.name} » ? Cette action le désactive définitivement.`)) return;
+    if (!confirm(`Supprimer définitivement « ${p.name} » ? Aucune donnée liée (commandes, transactions, messages) n'est effacée, mais ce partenaire ne pourra plus être réactivé depuis cet écran.`)) return;
+    this.busyId.set(p.tenantId);
     this.partnerApi.deletePartner(p.tenantId).subscribe({
       next: () => {
-        this.rows.set(this.rows().filter((r) => r.tenantId !== p.tenantId));
+        this.busyId.set(null);
+        this.setStatus(p.tenantId!, 'SUPPRIME');
         this.audit.log('partner_delete', 'partner', p.name, p.name, `Suppression du partenaire ${p.name}`).subscribe();
       },
-      error: () => this.error.set(`Échec de la suppression de ${p.name}.`),
+      error: () => { this.busyId.set(null); this.error.set(`Échec de la suppression de ${p.name}.`); },
     });
   }
 
@@ -287,7 +354,7 @@ export class PartnersComponent implements OnInit {
         const p = res.partner;
         this.rows.set([{
           name: p.name, code: p.code, shortCode: p.shortCode, sector: p.sector, partnerType: p.partnerType,
-          interfaces: p.interfaceCount, active: true, tenantId: p.id,
+          interfaces: p.interfaceCount, active: true, status: 'ACTIVE', tenantId: p.id,
         }, ...this.rows()]);
         this.createdKey.set(res.apiKey);
         this.createdPassword.set(res.tempPassword ?? '—');

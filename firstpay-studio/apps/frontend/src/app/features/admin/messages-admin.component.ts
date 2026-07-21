@@ -52,7 +52,7 @@ import { PartnerApiService, PartnerListDto } from '../../core/api/partner-api.se
 
         <div class="history">
           <div class="history-title">Historique</div>
-          <div class="table">
+          <div class="table-scroll"><div class="table">
             <div class="thead"><div>Destinataire</div><div>Sujet</div><div>Expéditeur</div><div>Date</div></div>
             @for (m of sent(); track m.id) {
               <div class="trow">
@@ -64,7 +64,7 @@ import { PartnerApiService, PartnerListDto } from '../../core/api/partner-api.se
             } @empty {
               <div class="no-rows">Aucun message envoyé pour le moment.</div>
             }
-          </div>
+          </div></div>
         </div>
       </div>
     </div>

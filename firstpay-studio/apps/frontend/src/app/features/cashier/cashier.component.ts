@@ -246,9 +246,11 @@ export class CashierComponent implements OnInit {
   ngOnInit() {
     this.partnerApi.listPartners().subscribe({
       next: (list) => {
-        this.partnerRows.set(list.map((d) => ({
+        // La caisse ne doit proposer que des partenaires actifs (pas suspendus/supprimés) —
+        // listPartners() renvoie désormais tous les statuts pour les besoins de l'admin.
+        this.partnerRows.set(list.filter((d) => d.status === 'ACTIVE').map((d) => ({
           name: d.name, code: d.code, shortCode: d.shortCode, sector: d.sector, partnerType: d.partnerType,
-          interfaces: d.interfaceCount, active: d.status === 'ACTIVE', tenantId: d.id,
+          interfaces: d.interfaceCount, active: true, status: d.status, tenantId: d.id,
         })));
       },
       error: () => this.loadError.set('Impossible de charger les partenaires.'),

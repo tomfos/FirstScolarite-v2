@@ -53,7 +53,8 @@ const BREADCRUMB: Record<string, string> = {
   styleUrl: './shell.component.scss',
   template: `
     <div class="shell">
-      <aside class="sidebar">
+      @if (sidebarOpen()) { <div class="sidebar-backdrop" (click)="sidebarOpen.set(false)"></div> }
+      <aside class="sidebar" [class.open]="sidebarOpen()">
         <div class="brand">
           <div class="logo">FC</div>
           <div>
@@ -63,7 +64,7 @@ const BREADCRUMB: Record<string, string> = {
         </div>
         <nav>
           @for (it of items(); track it.id) {
-            <a [routerLink]="['/', it.id]" routerLinkActive="active" class="nav-item">{{ it.label }}</a>
+            <a [routerLink]="['/', it.id]" routerLinkActive="active" class="nav-item" (click)="sidebarOpen.set(false)">{{ it.label }}</a>
           }
         </nav>
         <div class="foot">
@@ -74,6 +75,7 @@ const BREADCRUMB: Record<string, string> = {
 
       <div class="main">
         <header class="topbar">
+          <button class="menu-toggle" type="button" (click)="sidebarOpen.set(!sidebarOpen())" aria-label="Ouvrir le menu">☰</button>
           <div class="crumb">
             <div class="crumb-label">{{ roleDef()?.side === 'bank' ? 'Plateforme' : 'Partenaire' }} › {{ breadcrumb() }}</div>
             <div class="crumb-row">
@@ -146,6 +148,10 @@ export class ShellComponent implements OnInit {
     this.studioStore.loadFromApi();
   }
 
+  /** Menu latéral escamotable sous ~900px (voir shell.component.scss) — fermé par défaut,
+   * y compris au chargement d'un écran large ; la media query masque le bouton ☰ et le
+   * fond au-dessus du seuil, donc l'état du signal est sans effet visible en desktop. */
+  readonly sidebarOpen = signal(false);
   readonly roleDef = this.auth.roleDef;
   /** Rôles avec un écran Paramètres propre (partner_admin, bank_admin) y changent leur mot
    * de passe directement ; les autres (bank_cashier, manager/accountant/viewer) n'ont aucun

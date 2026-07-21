@@ -32,7 +32,7 @@ import { exportToExcel } from '../../shared/utils/excel-export.util';
       <div class="body">
         @if (error()) { <div class="err">{{ error() }}</div> }
 
-        <div class="table">
+        <div class="table-scroll"><div class="table">
           <div class="thead">
             <div>Partenaire</div><div>Quantité</div><div>Statut</div><div>Vendues</div><div>Activées</div><div>Date</div><div></div>
           </div>
@@ -57,7 +57,7 @@ import { exportToExcel } from '../../shared/utils/excel-export.util';
           } @empty {
             <div class="no-rows">Aucune commande pour le moment.</div>
           }
-        </div>
+        </div></div>
       </div>
 
       @if (ventesTarget(); as t) {
