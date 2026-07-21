@@ -7,6 +7,7 @@ import { PartnerType } from '../../core/auth/roles';
 import { TenantContextService } from '../../core/tenant/tenant-context.service';
 import { PartnerApiService } from '../../core/api/partner-api.service';
 import { AuditApiService } from '../../core/api/audit-api.service';
+import { exportToExcel } from '../../shared/utils/excel-export.util';
 
 interface Draft {
   name: string; sector: string; partnerType: string; adminName: string; adminEmail: string;
@@ -40,11 +41,15 @@ const PARTNER_TYPES = [
         </div>
         <div class="head-right">
           <span class="count">{{ filtered().length }} partenaire(s)</span>
+          <button class="ghost" [disabled]="exporting()" (click)="exportExcel()">
+            {{ exporting() ? 'Export…' : '⭳ Exporter (Excel)' }}
+          </button>
           <button class="new-btn" (click)="openCreate()">+ Nouveau partenaire</button>
         </div>
       </div>
 
       <div class="body">
+        @if (error() && !draft()) { <div class="err">{{ error() }}</div> }
         <div class="search"><span>⌕</span>
           <input [ngModel]="search()" (ngModelChange)="search.set($event)" placeholder="Rechercher par nom, code partenaire ou secteur…"></div>
 
@@ -54,7 +59,12 @@ const PARTNER_TYPES = [
             <div class="trow" [class.alt]="i % 2 === 0">
               <div><div class="p-name">{{ p.name }}</div><div class="p-code mono">{{ p.code }}</div></div>
               <div class="muted">{{ p.sector }}</div>
-              <div class="muted">{{ partnerTypeLabel(p.partnerType) }}</div>
+              <div>
+                <select class="type-select" [ngModel]="p.partnerType" [disabled]="typeSavingId() === p.tenantId"
+                  (ngModelChange)="changeType(p, $event)">
+                  @for (t of partnerTypes; track t.value) { <option [value]="t.value">{{ t.label }}</option> }
+                </select>
+              </div>
               <div>{{ p.interfaces }}</div>
               <div>
                 <span class="status" [class.active]="p.active">
@@ -62,7 +72,8 @@ const PARTNER_TYPES = [
                 </span>
               </div>
               <div class="actions">
-                <button class="open" [disabled]="!p.active" (click)="impersonate(p)" title="Se connecter en son nom">◉ Ouvrir</button>
+                <button class="mini" [disabled]="!p.active" (click)="impersonate(p)" title="Se connecter en son nom">◉ Ouvrir</button>
+                <button class="mini danger" (click)="deletePartner(p)" title="Supprimer">🗑</button>
               </div>
             </div>
           }
@@ -123,7 +134,8 @@ const PARTNER_TYPES = [
 
                 <div class="section-sep">Compte de règlement (réception des fonds)</div>
                 <label class="fld"><span>Numéro de compte <i>*</i></span>
-                  <input [ngModel]="d.settlementAccount" (ngModelChange)="patch({ settlementAccount: $event })" placeholder="Ex : 10005 00012 12345678901 23"></label>
+                  <input [ngModel]="d.settlementAccount" (ngModelChange)="patch({ settlementAccount: formatCompte($event) })"
+                    placeholder="Ex : 10005 00012 12345678901 23" maxlength="26" inputmode="numeric"></label>
                 <div class="two">
                   <label class="fld"><span>Titulaire du compte</span>
                     <input [ngModel]="d.accountHolder" (ngModelChange)="patch({ accountHolder: $event })" placeholder="Ex : Clinique Saint-Luc SARL"></label>
@@ -163,6 +175,7 @@ export class PartnersComponent implements OnInit {
   readonly copied = signal(false);
   readonly error = signal('');
   readonly listError = signal('');
+  readonly exporting = signal(false);
 
   ngOnInit() { this.reload(); }
 
@@ -184,8 +197,69 @@ export class PartnersComponent implements OnInit {
     return this.rows().filter((p) => !q || p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || p.sector.toLowerCase().includes(q));
   });
 
-  partnerTypeLabel(value: string): string {
+  async exportExcel() {
+    this.exporting.set(true);
+    try {
+      await exportToExcel(
+        `partenaires-${new Date().toISOString().slice(0, 10)}`,
+        'Partenaires',
+        [
+          { header: 'Nom', key: 'name', width: 30 },
+          { header: 'Code partenaire', key: 'code', width: 26 },
+          { header: 'Secteur', key: 'sector', width: 18 },
+          { header: 'Type', key: 'type', width: 14 },
+          { header: 'Interfaces', key: 'interfaces', width: 12 },
+          { header: 'Statut', key: 'status', width: 12 },
+        ],
+        this.filtered().map((p) => ({
+          name: p.name,
+          code: p.code,
+          sector: p.sector,
+          type: this.partnerTypeLabel(p.partnerType),
+          interfaces: p.interfaces,
+          status: p.active ? 'Actif' : 'Suspendu',
+        })),
+      );
+    } finally {
+      this.exporting.set(false);
+    }
+  }
+
+  private partnerTypeLabel(value: string): string {
     return this.partnerTypes.find((t) => t.value === value)?.label ?? value;
+  }
+
+  readonly typeSavingId = signal<string | null>(null);
+
+  changeType(p: PartnerRecord, newType: string) {
+    if (!p.tenantId || newType === p.partnerType) return;
+    const previous = p.partnerType;
+    this.typeSavingId.set(p.tenantId);
+    this.rows.set(this.rows().map((r) => (r.tenantId === p.tenantId ? { ...r, partnerType: newType } : r)));
+    this.partnerApi.updatePartnerType(p.tenantId, newType).subscribe({
+      next: () => {
+        this.typeSavingId.set(null);
+        this.audit.log('partner_type_change', 'partner', p.name, p.name,
+          `Type changé : ${previous} → ${newType}`).subscribe();
+      },
+      error: () => {
+        this.typeSavingId.set(null);
+        this.rows.set(this.rows().map((r) => (r.tenantId === p.tenantId ? { ...r, partnerType: previous } : r)));
+        this.error.set(`Échec du changement de type pour ${p.name}.`);
+      },
+    });
+  }
+
+  deletePartner(p: PartnerRecord) {
+    if (!p.tenantId) return;
+    if (!confirm(`Supprimer le partenaire « ${p.name} » ? Cette action le désactive définitivement.`)) return;
+    this.partnerApi.deletePartner(p.tenantId).subscribe({
+      next: () => {
+        this.rows.set(this.rows().filter((r) => r.tenantId !== p.tenantId));
+        this.audit.log('partner_delete', 'partner', p.name, p.name, `Suppression du partenaire ${p.name}`).subscribe();
+      },
+      error: () => this.error.set(`Échec de la suppression de ${p.name}.`),
+    });
   }
 
   // ---- Création ----
@@ -194,6 +268,13 @@ export class PartnersComponent implements OnInit {
     this.draft.set({ name: '', sector: 'Fintech', partnerType: 'standard', adminName: '', adminEmail: '', settlementAccount: '', accountHolder: '', settlementBank: '' });
   }
   patch(p: Partial<Draft>) { const d = this.draft(); if (d) this.draft.set({ ...d, ...p }); }
+
+  /** Formate en groupes 5-5-11-2 (banque/guichet/compte/clé) au fil de la saisie, sans espace à taper. */
+  formatCompte(raw: string): string {
+    const digits = raw.replace(/\D/g, '').slice(0, 23);
+    const groups = [digits.slice(0, 5), digits.slice(5, 10), digits.slice(10, 21), digits.slice(21, 23)];
+    return groups.filter((g) => g.length > 0).join(' ');
+  }
   closeCreate() { this.draft.set(null); }
 
   submitCreate() {

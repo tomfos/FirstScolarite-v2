@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiCardOrderDto, CardOrderApiService } from '../../core/api/card-order-api.service';
+import { exportToExcel } from '../../shared/utils/excel-export.util';
 
 /**
  * Vue banque des commandes de cartes, tous partenaires EMF confondus. Livrer/Annuler font
@@ -20,7 +21,12 @@ import { ApiCardOrderDto, CardOrderApiService } from '../../core/api/card-order-
           <div class="title">Commandes de cartes</div>
           <div class="subtitle">Toutes les commandes de cartes prépayées, tous partenaires EMF confondus.</div>
         </div>
-        <span class="count">{{ rows().length }} commande(s)</span>
+        <div class="head-right">
+          <span class="count">{{ rows().length }} commande(s)</span>
+          <button class="ghost" [disabled]="exporting()" (click)="exportExcel()">
+            {{ exporting() ? 'Export…' : '⭳ Exporter (Excel)' }}
+          </button>
+        </div>
       </div>
 
       <div class="body">
@@ -92,8 +98,37 @@ export class CardOrdersAdminComponent implements OnInit {
   readonly ventesVendue = signal(0);
   readonly ventesActivee = signal(0);
   readonly ventesError = signal('');
+  readonly exporting = signal(false);
 
   ngOnInit() { this.reload(); }
+
+  async exportExcel() {
+    this.exporting.set(true);
+    try {
+      await exportToExcel(
+        `commandes-cartes-${new Date().toISOString().slice(0, 10)}`,
+        'Commandes de cartes',
+        [
+          { header: 'Partenaire', key: 'partner', width: 28 },
+          { header: 'Quantité', key: 'quantite', width: 12 },
+          { header: 'Statut', key: 'statut', width: 14 },
+          { header: 'Vendues', key: 'vendues', width: 12 },
+          { header: 'Activées', key: 'activees', width: 12 },
+          { header: 'Date de commande', key: 'date', width: 18 },
+        ],
+        this.rows().map((o) => ({
+          partner: o.partnerName ?? '',
+          quantite: o.quantite,
+          statut: this.statutLabel(o.statut),
+          vendues: o.quantiteVendue,
+          activees: o.quantiteActivee,
+          date: this.date(o.dateCommande),
+        })),
+      );
+    } finally {
+      this.exporting.set(false);
+    }
+  }
 
   private reload() {
     this.error.set('');

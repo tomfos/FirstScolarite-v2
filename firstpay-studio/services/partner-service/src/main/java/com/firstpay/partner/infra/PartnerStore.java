@@ -236,6 +236,41 @@ public class PartnerStore {
             )).one();
     }
 
+    /**
+     * Suppression douce : passe le tenant hors du statut ACTIVE plutot que de le supprimer en
+     * base (transactions/commandes/messages y font reference sans contrainte de cle etrangere
+     * a rompre, mais un vrai DELETE romprait aussi la tracabilite). Reutilise le filtre ACTIVE
+     * deja en place partout (listPartners, resolution API-key, impersonation) : un partenaire
+     * supprime disparait automatiquement de tout ca, sans logique dupliquee.
+     */
+    public Mono<Long> delete(UUID id) {
+        return db.sql("UPDATE tenants SET status = 'SUPPRIME', updated_at = now() WHERE id = :id AND status = 'ACTIVE'")
+            .bind("id", id).fetch().rowsUpdated();
+    }
+
+    public Mono<Long> updateType(UUID id, String partnerType) {
+        return db.sql("UPDATE tenants SET config = jsonb_set(config, '{partnerType}', to_jsonb(:type::text), true), updated_at = now() WHERE id = :id")
+            .bind("id", id).bind("type", partnerType)
+            .fetch().rowsUpdated();
+    }
+
+    /** Hash de mot de passe du compte connecté (tous rôles, table partagée). "" si compte de démo (hash absent). */
+    public Mono<String> passwordHashByEmail(String email) {
+        return db.sql("SELECT password_hash FROM partner_users WHERE lower(email) = lower(:email) AND status = 'active'")
+            .bind("email", email)
+            .map(r -> {
+                String h = r.get("password_hash", String.class);
+                return h != null ? h : "";
+            })
+            .one();
+    }
+
+    public Mono<Long> updatePassword(String email, String newHash) {
+        return db.sql("UPDATE partner_users SET password_hash = :h WHERE lower(email) = lower(:email)")
+            .bind("h", newHash).bind("email", email)
+            .fetch().rowsUpdated();
+    }
+
     public Flux<UserDto> listUsers(UUID tenantId) {
         return db.sql("SELECT * FROM partner_users WHERE tenant_id = :t ORDER BY created_at")
             .bind("t", tenantId)

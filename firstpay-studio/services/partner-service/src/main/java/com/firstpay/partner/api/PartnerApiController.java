@@ -63,6 +63,39 @@ public class PartnerApiController {
                 .thenReturn(res));
     }
 
+    /** Suppression (douce) d'un partenaire — reservee a l'administrateur banque. */
+    @DeleteMapping("/api/v1/partners/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> deletePartner(
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @PathVariable UUID id) {
+        if (!"bank_admin".equals(role)) {
+            return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "Seul l'administrateur banque peut supprimer un partenaire"));
+        }
+        return partners.delete(id)
+            .flatMap(n -> n > 0 ? Mono.<Void>empty()
+                : Mono.<Void>error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Partenaire introuvable")));
+    }
+
+    /** Change le type fonctionnel d'un partenaire (ex. standard <-> emf) — administrateur banque. */
+    @PatchMapping("/api/v1/partners/{id}/type")
+    public Mono<PartnerDto> updatePartnerType(
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @PathVariable UUID id,
+            @RequestBody UpdatePartnerTypeRequest req) {
+        if (!"bank_admin".equals(role)) {
+            return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "Seul l'administrateur banque peut modifier le type d'un partenaire"));
+        }
+        if (req == null || req.partnerType() == null || req.partnerType().isBlank()) {
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Type de partenaire requis"));
+        }
+        return partners.updateType(id, req.partnerType())
+            .flatMap(n -> n > 0 ? partners.listPartners().filter(p -> p.id().equals(id.toString())).next()
+                : Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Partenaire introuvable")));
+    }
+
     public record ImpersonateResponse(String token, String tenantId, String partner,
                                       String code, String shortCode, String sector, String partnerType,
                                       String tokenType) {}

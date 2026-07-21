@@ -144,6 +144,14 @@ export class PartnerApiService {
     return this.http.post<CreatePartnerResponse>(`${this.base}/api/v1/partners`, req);
   }
 
+  deletePartner(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/api/v1/partners/${id}`);
+  }
+
+  updatePartnerType(id: string, partnerType: string): Observable<PartnerListDto> {
+    return this.http.patch<PartnerListDto>(`${this.base}/api/v1/partners/${id}/type`, { partnerType });
+  }
+
   /** JWT de délégation banque → partenaire (role partner_admin, tenant cible). */
   impersonate(tenantId: string): Observable<ImpersonateResponse> {
     return this.http.post<ImpersonateResponse>(`${this.base}/api/v1/partners/${tenantId}/impersonate`, {});

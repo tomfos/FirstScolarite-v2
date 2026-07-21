@@ -70,6 +70,38 @@ public class EmailService {
     }
 
     /**
+     * Email envoyé à un partenaire quand la banque lui adresse un message via le module
+     * Messages (ciblé ou diffusé à tous) — même circuit SMTP best-effort que la connexion.
+     */
+    public Mono<Boolean> sendPartnerMessageEmail(String toEmail, String toName, String subject, String body) {
+        if (toEmail == null || toEmail.isBlank()) return Mono.just(false);
+        return platform.getRaw().flatMap(cfg -> {
+            if (!cfg.smtpEnabled() || cfg.smtpHost() == null || cfg.smtpHost().isBlank()) {
+                log.info("SMTP désactivé/non configuré — message « {} » non envoyé par email à {}.", subject, toEmail);
+                return Mono.just(false);
+            }
+            String fullSubject = "[FirstPay] " + subject;
+            String fullBody = """
+                Bonjour%s,
+
+                Vous avez reçu un nouveau message d'Afriland First Bank sur le portail FirstPay :
+
+                « %s »
+
+                %s
+
+                Consultez vos messages sur le portail : %s
+
+                — L'équipe FirstPay, Afriland First Bank
+                """.formatted(toName == null || toName.isBlank() ? "" : " " + toName, subject, body,
+                              resolvePortalUrl(null, cfg.appBaseUrl()));
+            return Mono.fromCallable(() -> { send(cfg, toEmail, fullSubject, fullBody); return true; })
+                .subscribeOn(Schedulers.boundedElastic())
+                .onErrorResume(e -> { log.warn("Échec d'envoi email (message) à {} : {}", toEmail, e.getMessage()); return Mono.just(false); });
+        });
+    }
+
+    /**
      * URL du portail insérée dans l'email de connexion. Priorité :
      * <ol>
      *   <li>host de la requête courante (option 2, SaaS multi-domaines) ;</li>

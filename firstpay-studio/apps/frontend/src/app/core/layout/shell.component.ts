@@ -8,6 +8,8 @@ import { TenantContextService } from '../tenant/tenant-context.service';
 import { ThemeService } from '../theme/theme.service';
 import { StudioStore } from '../../features/studio/studio.store';
 import { ToastComponent } from '../../shared/components/toast.component';
+import { NotificationBellComponent } from '../../shared/components/notification-bell.component';
+import { ChangePasswordButtonComponent } from '../../shared/components/change-password-button.component';
 
 /**
  * partnerTypes : filtre additionnel, orthogonal à `roles` — si présent, l'item n'est
@@ -28,6 +30,7 @@ const NAV: NavItem[] = [
   { id: 'partners', label: 'Partenaires', roles: ['bank_admin'] },
   { id: 'collections', label: 'Encaissements', roles: ['bank_admin'] },
   { id: 'card_orders_admin', label: 'Commandes de cartes', roles: ['bank_admin'] },
+  { id: 'messages', label: 'Messages', roles: ['bank_admin'] },
   { id: 'transactions_all', label: 'Transactions plateforme', roles: ['bank_admin'] },
   { id: 'audit', label: "Journal d'audit", roles: ['bank_admin'] },
   { id: 'settings_platform', label: 'Paramètres plateforme', roles: ['bank_admin'] },
@@ -38,7 +41,7 @@ const NAV: NavItem[] = [
 const BREADCRUMB: Record<string, string> = {
   home: 'Tableau de bord', studio: 'Studio', transactions: 'Transactions', cards: 'Commande de cartes',
   users: 'Utilisateurs', settings: 'Paramètres', admin_home: 'Supervision', partners: 'Partenaires',
-  collections: 'Encaissements', card_orders_admin: 'Commandes de cartes',
+  collections: 'Encaissements', card_orders_admin: 'Commandes de cartes', messages: 'Messages',
   transactions_all: 'Transactions plateforme', audit: 'Audit',
   settings_platform: 'Paramètres plateforme', cashier: 'Caisse', cashier_history: 'Mes encaissements',
 };
@@ -46,7 +49,7 @@ const BREADCRUMB: Record<string, string> = {
 @Component({
   selector: 'fp-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, RouterModule, ToastComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, RouterModule, ToastComponent, NotificationBellComponent, ChangePasswordButtonComponent],
   styleUrl: './shell.component.scss',
   template: `
     <div class="shell">
@@ -90,6 +93,8 @@ const BREADCRUMB: Record<string, string> = {
             </div>
           </div>
           <div class="topbar-right">
+            @if (!auth.isBank()) { <fp-notification-bell /> }
+            @if (!hasSettingsAccess()) { <fp-change-password-button /> }
             <button class="theme-toggle" type="button" (click)="theme.toggle()"
                     [attr.aria-label]="theme.resolved() === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'"
                     [attr.title]="theme.resolved() === 'dark' ? 'Thème clair' : 'Thème sombre'">
@@ -142,6 +147,13 @@ export class ShellComponent implements OnInit {
   }
 
   readonly roleDef = this.auth.roleDef;
+  /** Rôles avec un écran Paramètres propre (partner_admin, bank_admin) y changent leur mot
+   * de passe directement ; les autres (bank_cashier, manager/accountant/viewer) n'ont aucun
+   * écran Paramètres, d'où le cadenas topbar en repli pour eux uniquement. */
+  readonly hasSettingsAccess = computed(() => {
+    const modules = this.roleDef()?.modules ?? [];
+    return modules.includes('settings') || modules.includes('settings_platform');
+  });
   readonly items = computed(() => {
     const role = this.auth.effectiveRole();
     if (!role) return [];

@@ -5,13 +5,14 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 import { BRAND_PALETTE, NOTIF_EVENTS, SettingsStore } from './settings.store';
 import { TenantContextService } from '../../core/tenant/tenant-context.service';
+import { ChangePasswordCardComponent } from '../../shared/components/change-password-card.component';
 
 type Section = 'brand' | 'import' | 'security' | 'notifications' | 'platform';
 
 @Component({
   selector: 'fp-settings',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, ChangePasswordCardComponent],
   styleUrl: './settings.component.scss',
   template: `
     <div class="page">
@@ -74,6 +75,7 @@ type Section = 'brand' | 'import' | 'security' | 'notifications' | 'platform';
             }
 
             @case ('security') {
+              <fp-change-password-card />
               <div class="card">
                 <div class="card-title">Sécurité</div>
                 <div class="sec-row"><div><div class="sec-name">Authentification à deux facteurs (2FA)</div><div class="sec-desc">Renforce la connexion de votre équipe.</div></div>

@@ -45,6 +45,8 @@ public final class Dtos {
     public record CreatePartnerRequest(String name, String sector, String partnerType, String adminName, String adminEmail,
                                        String settlementAccount, String accountHolder, String settlementBank) {}
 
+    public record UpdatePartnerTypeRequest(String partnerType) {}
+
     /** Réponse de création : le partenaire + l'API-key + les identifiants temporaires (affichés une fois). */
     public record CreatePartnerResponse(PartnerDto partner, String apiKey, String adminEmail, String tempPassword) {}
 
@@ -137,6 +139,19 @@ public final class Dtos {
 
     /** Valeurs absolues (pas des deltas), bornees a la quantite commandee par le store. */
     public record EnregistrerVentesRequest(int quantiteVendue, int quantiteActivee) {}
+
+    /* ------------------------ Messagerie banque -> partenaires ------------------------ */
+
+    /**
+     * Message envoye par la banque. tenantId renseigne = cible un partenaire ; tenantId absent =
+     * diffusion a tous les partenaires. targetLabel (nom du partenaire ou "Tous les partenaires")
+     * n'est renseigne que sur la vue banque (GET /messages/sent) ; read n'a de sens que sur la vue
+     * partenaire (GET /messages), relatif au tenant appelant.
+     */
+    public record MessageDto(String id, String tenantId, String targetLabel, String subject, String body,
+                             String senderName, String createdAt, boolean read) {}
+
+    public record SendMessageRequest(String tenantId, String subject, String body) {}
 
     /* ------------------------ Répertoire étudiants (matricule) ------------------------ */
 

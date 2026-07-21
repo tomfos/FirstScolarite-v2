@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PlatformApiService, PlatformSettings } from '../../core/api/platform-api.service';
+import { ChangePasswordCardComponent } from '../../shared/components/change-password-card.component';
 
 const EMPTY: PlatformSettings = {
   smtpHost: '', smtpPort: 587, smtpUsername: '', smtpPassword: '',
@@ -19,7 +20,7 @@ const EMPTY: PlatformSettings = {
 @Component({
   selector: 'fp-platform-settings',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, ChangePasswordCardComponent],
   styleUrl: './platform-settings.component.scss',
   template: `
     <div class="page">
@@ -184,6 +185,8 @@ const EMPTY: PlatformSettings = {
         <div class="save-row">
           <button class="primary" [disabled]="saving()" (click)="save()">{{ saving() ? 'Enregistrement…' : 'Enregistrer' }}</button>
         </div>
+
+        <fp-change-password-card />
 
         <div class="note">
           ℹ️ À la création d'un partenaire, un email contenant le <b>lien de l'application</b> et un

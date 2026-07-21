@@ -30,7 +30,7 @@ export const ROLES_CATALOG: Record<RoleId, RoleDef> = {
     desc: "Accès complet à la plateforme First Collect. Supervise tous les partenaires, accède à l'audit, débogue les interfaces, dénoue les litiges.",
     perms: ['*', 'platform.read', 'platform.write', 'partners.manage', 'audit.read', 'impersonate', 'tx.refund'],
     home: 'admin_home',
-    modules: ['admin_home', 'partners', 'collections', 'card_orders_admin', 'transactions_all', 'audit', 'settings_platform'],
+    modules: ['admin_home', 'partners', 'collections', 'card_orders_admin', 'messages', 'transactions_all', 'audit', 'settings_platform'],
   },
   bank_cashier: {
     label: 'Caissière Agence', side: 'bank', color: '#7C3AED', bg: '#F1ECFE',
