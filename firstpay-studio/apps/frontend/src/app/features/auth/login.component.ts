@@ -127,8 +127,10 @@ export class LoginComponent {
           sector: res.sector ?? '',
         });
       }
+      // replaceUrl : la page de connexion ne doit pas rester dans l'historique du navigateur,
+      // sinon la flèche "retour" y ramène après une connexion réussie.
       // Mot de passe temporaire (création ou réinitialisation) : changement obligatoire avant tout accès.
-      this.router.navigate(res.mustChangePassword ? ['/changer-mot-de-passe'] : ['/', cat.home]);
+      this.router.navigate(res.mustChangePassword ? ['/changer-mot-de-passe'] : ['/', cat.home], { replaceUrl: true });
     });
   }
 
@@ -160,6 +162,6 @@ export class LoginComponent {
         if (res.tenantId) this.tenant.setTenantId(res.tenantId);
       }
     });
-    this.router.navigate(['/', ROLES_CATALOG[acc.role].home]);
+    this.router.navigate(['/', ROLES_CATALOG[acc.role].home], { replaceUrl: true });
   }
 }

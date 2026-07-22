@@ -44,9 +44,11 @@ export const ROLES_CATALOG: Record<RoleId, RoleDef> = {
     desc: "Contrôle complet de l'espace du partenaire. Crée et publie des interfaces, gère l'équipe, importe des données, configure la marque et les notifications.",
     perms: ['studio.*', 'tx.*', 'users.*', 'settings.*'],
     home: 'home',
-    // 'cards' n'est effectivement accessible que si le partenaire est de type EMF
-    // (voir NavItem.partnerTypes dans shell.component.ts et moduleGuard) — présent ici
-    // pour autoriser le rôle, la restriction de type s'applique en plus, pas à la place.
+    // 'cards' n'est accessible que si le partenaire est EMF, 'studio' seulement s'il est
+    // standard (un EMF vend déjà via sa propre plateforme externe — SELECT/PayWay — donc
+    // n'a pas besoin de créer des interfaces de paiement firstpay) — voir NavItem.partnerTypes
+    // dans shell.component.ts et moduleGuard. Présents ici pour autoriser le rôle ; la
+    // restriction de type s'applique en plus, pas à la place.
     modules: ['home', 'studio', 'transactions', 'users', 'settings', 'cards'],
   },
   partner_manager: {

@@ -43,11 +43,11 @@ export class ForcePasswordChangeComponent {
     this.auth.clearMustChangePassword();
     const role = this.auth.user()?.role;
     const home = role ? ROLES_CATALOG[role].home : 'login';
-    this.router.navigate(['/', home]);
+    this.router.navigate(['/', home], { replaceUrl: true });
   }
 
   logout() {
     this.auth.logout();
-    this.router.navigate(['/login']);
+    this.router.navigate(['/login'], { replaceUrl: true });
   }
 }

@@ -21,7 +21,7 @@ interface NavItem { id: string; label: string; roles: RoleId[]; partnerTypes?: P
 
 const NAV: NavItem[] = [
   { id: 'home', label: 'Tableau de bord', roles: ['partner_admin', 'partner_manager', 'partner_accountant', 'partner_viewer'] },
-  { id: 'studio', label: 'Studio de paiement', roles: ['partner_admin', 'partner_manager', 'partner_viewer'] },
+  { id: 'studio', label: 'Studio de paiement', roles: ['partner_admin', 'partner_manager', 'partner_viewer'], partnerTypes: ['standard'] },
   { id: 'transactions', label: 'Transactions', roles: ['partner_admin', 'partner_manager', 'partner_accountant', 'partner_viewer'] },
   { id: 'cards', label: 'Commande de cartes', roles: ['partner_admin', 'partner_manager'], partnerTypes: ['emf'] },
   { id: 'users', label: 'Utilisateurs', roles: ['partner_admin'] },
@@ -173,12 +173,12 @@ export class ShellComponent implements OnInit {
   exitImpersonate() {
     this.auth.exitImpersonate();
     const home = ROLES_CATALOG[this.auth.user()!.role].home;
-    this.router.navigate(['/', home]);
+    this.router.navigate(['/', home], { replaceUrl: true });
   }
 
   logout() {
     this.auth.logout();
     this.tenant.clear();
-    this.router.navigate(['/login']);
+    this.router.navigate(['/login'], { replaceUrl: true });
   }
 }

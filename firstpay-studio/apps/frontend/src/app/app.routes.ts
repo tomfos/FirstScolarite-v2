@@ -21,7 +21,7 @@ export const routes: Routes = [
     children: [
       // Partenaire
       { path: 'home', data: { module: 'home' }, loadComponent: () => import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent) },
-      { path: 'studio', data: { module: 'studio' }, loadComponent: () => import('./features/studio/studio.component').then((m) => m.StudioComponent) },
+      { path: 'studio', data: { module: 'studio', partnerTypes: ['standard'] }, loadComponent: () => import('./features/studio/studio.component').then((m) => m.StudioComponent) },
       { path: 'transactions', data: { module: 'transactions', scope: 'partner' }, loadComponent: () => import('./features/transactions/transactions.component').then((m) => m.TransactionsComponent) },
       { path: 'cards', data: { module: 'cards', partnerTypes: ['emf'] }, loadComponent: () => import('./features/cards/cards.component').then((m) => m.CardsComponent) },
       { path: 'users', data: { module: 'users' }, loadComponent: () => import('./features/users/users.component').then((m) => m.UsersComponent) },
