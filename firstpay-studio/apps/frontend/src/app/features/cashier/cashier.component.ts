@@ -153,7 +153,7 @@ const STEP_LABELS = ['Identification', 'Montant', 'Mode', 'Validation'];
               @if (step() < 3) {
                 <button class="primary" [disabled]="!canNext()" (click)="step.set(step() + 1)">Suivant ›</button>
               } @else {
-                <button class="primary" [disabled]="submitting()" (click)="complete()">{{ submitting() ? 'Traitement…' : '✓ Valider l\'encaissement' }}</button>
+                <button class="primary" [disabled]="submitting()" (click)="complete()">{{ submitting() ? 'Traitement…' : "✓ Valider l'encaissement" }}</button>
               }
             </div>
           </div>

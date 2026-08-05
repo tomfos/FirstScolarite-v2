@@ -536,7 +536,7 @@ function normKey(s: string): string {
  * un objet en-tête → valeur.
  */
 function parseCsv(text: string): Record<string, string>[] {
-  const clean = text.replace(/^﻿/, ''); // BOM éventuel
+  const clean = text.replace(/^\uFEFF/, ''); // BOM éventuel
   if (!clean.trim()) return [];
   const firstLine = clean.slice(0, clean.search(/\r?\n/) === -1 ? clean.length : clean.search(/\r?\n/));
   const delim = countDelim(firstLine, ';') > countDelim(firstLine, ',')

@@ -229,7 +229,8 @@ export class TransactionsComponent implements OnInit {
     const rows = this.filtered();
     const cols: (keyof Transaction)[] = ['reference', 'payer', 'phone', 'interfaceName', 'method', 'status', 'amount', 'date'];
     const headers = ['Référence', 'Payeur', 'Téléphone', 'Interface', 'Moyen', 'Statut', 'Montant (XAF)', 'Date'];
-    let content = '', mime = 'text/csv;charset=utf-8', ext = this.format();
+    let content = '', mime = 'text/csv;charset=utf-8';
+    const ext = this.format();
     if (this.format() === 'json') {
       content = JSON.stringify(rows.map((t) => ({ ...t })), null, 2);
       mime = 'application/json';
