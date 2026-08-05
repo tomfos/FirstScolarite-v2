@@ -9,6 +9,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.ReactiveValueOperations;
+import org.springframework.transaction.ReactiveTransaction;
+import org.springframework.transaction.ReactiveTransactionManager;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -31,6 +33,7 @@ class TransactionCommandHandlerTest {
     private OutboxEventPublisher outbox;
     private EventStore eventStore;
     private TransactionEventStream events;
+    private ReactiveTransactionManager txManager;
     private TransactionCommandHandler handler;
 
     private final UUID tenant = UUID.randomUUID();
@@ -49,7 +52,11 @@ class TransactionCommandHandlerTest {
         when(eventStore.append(any(), any(), anyString(), anyString())).thenReturn(Mono.empty());
         when(store.insert(any())).thenAnswer(inv -> Mono.just(inv.getArgument(0)));
         when(store.updateStatus(any(), anyString())).thenReturn(Mono.just(1L));
-        handler = new TransactionCommandHandler(store, redis, outbox, eventStore, events);
+        txManager = mock(ReactiveTransactionManager.class);
+        when(txManager.getReactiveTransaction(any())).thenReturn(Mono.just(mock(ReactiveTransaction.class)));
+        when(txManager.commit(any())).thenReturn(Mono.empty());
+        when(txManager.rollback(any())).thenReturn(Mono.empty());
+        handler = new TransactionCommandHandler(store, redis, outbox, eventStore, events, txManager);
     }
 
     private TransactionCommand.CreateTransaction cmd() {
