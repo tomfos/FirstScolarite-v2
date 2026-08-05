@@ -23,15 +23,25 @@ const FALLBACK: AuditEventDto[] = [];
   template: `
     <div class="page">
       <div class="head">
-        <div class="eyebrow">Plateforme First Collect · Supervision</div>
-        <div class="title">Journal d'audit</div>
-        <div class="subtitle">Toutes les actions critiques sur la plateforme, en temps réel, conservées 12 mois.</div>
+        <div>
+          <div class="eyebrow">Plateforme First Collect · Supervision</div>
+          <div class="title">Journal d'audit</div>
+          <div class="subtitle">Toutes les actions critiques sur la plateforme, en temps réel, conservées 12 mois.</div>
+        </div>
+        @if (!showArchived()) {
+          <button class="archive-btn" [disabled]="archiving()" (click)="archiveAll()">
+            {{ archiving() ? 'Archivage…' : '🗄 Archiver tout' }}
+          </button>
+        }
       </div>
 
       <div class="filters">
         @for (f of chips; track f.id) {
           <button class="chip" [class.on]="filter() === f.id" (click)="filter.set(f.id); load()">{{ f.label }}</button>
         }
+        <span class="sep"></span>
+        <button class="chip" [class.on]="!showArchived()" (click)="showArchived.set(false); load()">Actifs</button>
+        <button class="chip" [class.on]="showArchived()" (click)="showArchived.set(true); load()">Archivés</button>
       </div>
 
       <div class="body">
@@ -61,13 +71,24 @@ export class AuditComponent implements OnInit {
     { id: 'warning', label: 'Avertissements' }, { id: 'danger', label: 'Critiques' },
   ];
   private readonly events = signal<AuditEventDto[]>(FALLBACK);
+  readonly showArchived = signal(false);
+  readonly archiving = signal(false);
 
   ngOnInit() { this.load(); }
 
   load() {
-    this.auditApi.list(this.filter()).subscribe({
+    this.auditApi.list(this.filter(), 100, this.showArchived()).subscribe({
       next: (rows) => this.events.set(rows),
       error: () => this.events.set([]),
+    });
+  }
+
+  archiveAll() {
+    if (!confirm("Archiver tous les événements actifs du journal d'audit ? Ils resteront consultables via le filtre « Archivés ».")) return;
+    this.archiving.set(true);
+    this.auditApi.archiveAll().subscribe({
+      next: () => { this.archiving.set(false); this.load(); },
+      error: () => { this.archiving.set(false); },
     });
   }
 

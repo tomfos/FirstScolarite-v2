@@ -69,6 +69,7 @@ export interface PartnerListDto {
   shortCode: string;
   name: string;
   sector: string;
+  partnerType: string;
   status: string;
   interfaceCount: number;
 }
@@ -76,6 +77,7 @@ export interface PartnerListDto {
 export interface CreatePartnerRequest {
   name: string;
   sector: string;
+  partnerType: string;
   adminName: string;
   adminEmail: string;
   settlementAccount: string;
@@ -97,6 +99,7 @@ export interface ImpersonateResponse {
   code: string;
   shortCode: string;
   sector: string;
+  partnerType: string;
   tokenType: string;
 }
 
@@ -141,6 +144,22 @@ export class PartnerApiService {
     return this.http.post<CreatePartnerResponse>(`${this.base}/api/v1/partners`, req);
   }
 
+  deletePartner(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/api/v1/partners/${id}`);
+  }
+
+  suspendPartner(id: string): Observable<PartnerListDto> {
+    return this.http.post<PartnerListDto>(`${this.base}/api/v1/partners/${id}/suspendre`, {});
+  }
+
+  reactivatePartner(id: string): Observable<PartnerListDto> {
+    return this.http.post<PartnerListDto>(`${this.base}/api/v1/partners/${id}/reactiver`, {});
+  }
+
+  updatePartnerType(id: string, partnerType: string): Observable<PartnerListDto> {
+    return this.http.patch<PartnerListDto>(`${this.base}/api/v1/partners/${id}/type`, { partnerType });
+  }
+
   /** JWT de délégation banque → partenaire (role partner_admin, tenant cible). */
   impersonate(tenantId: string): Observable<ImpersonateResponse> {
     return this.http.post<ImpersonateResponse>(`${this.base}/api/v1/partners/${tenantId}/impersonate`, {});
@@ -164,6 +183,11 @@ export class PartnerApiService {
 
   saveSettings(settings: ApiSettingsDto): Observable<ApiSettingsDto> {
     return this.http.put<ApiSettingsDto>(`${this.base}/api/v1/settings`, settings);
+  }
+
+  /** Régénère l'API-key du tenant courant — renvoyée en clair une seule fois. */
+  regenerateApiKey(): Observable<{ apiKey: string }> {
+    return this.http.post<{ apiKey: string }>(`${this.base}/api/v1/settings/regenerer-cle-api`, {});
   }
 
   /* ------------------------ Répertoire étudiants (matricule) ------------------------ */

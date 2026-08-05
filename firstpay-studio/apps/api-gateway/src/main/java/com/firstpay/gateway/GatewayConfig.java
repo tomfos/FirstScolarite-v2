@@ -42,7 +42,7 @@ public class GatewayConfig {
             .route("partner-service", r -> r.path(
                     "/api/v1/interfaces/**", "/api/v1/partners/**",
                     "/api/v1/users/**", "/api/v1/settings/**", "/api/v1/audit/**",
-                    "/api/v1/roster/**")
+                    "/api/v1/roster/**", "/api/v1/card-orders/**", "/api/v1/messages/**", "/api/v1/account/**")
                 .filters(f -> f.filter(tenantFilter).filter(rateLimitFilter))
                 .uri("lb://partner-service"))
             .route("reporting-service", r -> r.path("/api/v1/reports/**")

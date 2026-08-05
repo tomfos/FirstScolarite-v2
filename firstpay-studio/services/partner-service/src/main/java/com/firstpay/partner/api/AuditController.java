@@ -2,7 +2,9 @@ package com.firstpay.partner.api;
 
 import com.firstpay.partner.infra.AuditStore;
 import com.firstpay.partner.infra.AuditStore.AuditEntry;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -19,8 +21,19 @@ public class AuditController {
     @GetMapping
     public Flux<AuditEntry> list(
             @RequestParam(defaultValue = "all") String level,
-            @RequestParam(defaultValue = "100") int limit) {
-        return audit.list(level, Math.min(limit, 500));
+            @RequestParam(defaultValue = "100") int limit,
+            @RequestParam(defaultValue = "false") boolean archived) {
+        return audit.list(level, Math.min(limit, 500), archived);
+    }
+
+    /** Archive toutes les entrees actives — administrateur banque uniquement. */
+    @PostMapping("/archiver")
+    public Mono<Void> archiver(@RequestHeader(value = "X-User-Role", required = false) String role) {
+        if (!"bank_admin".equals(role)) {
+            return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "Seul l'administrateur banque peut archiver le journal d'audit"));
+        }
+        return audit.archiveAll().then();
     }
 
     public record AuditLogRequest(String action, String targetType, String targetId, String partner, String detail) {}

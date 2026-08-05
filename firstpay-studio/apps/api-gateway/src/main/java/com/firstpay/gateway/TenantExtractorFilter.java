@@ -20,8 +20,8 @@ import reactor.core.publisher.Mono;
  *   2) <b>API-key</b> ({@code X-API-Key} ou query {@code apiKey}) — accès machine-à-machine :
  *      résolu via {@link TenantResolver} (cache Redis devant la source de vérité).
  *
- * Dans les deux cas, X-Tenant-Id (+ X-Tenant-Rate-Limit, et X-User-Role pour le JWT) sont
- * RÉÉCRITS côté gateway → aucune usurpation possible par le client. 401 sinon.
+ * Dans les deux cas, X-Tenant-Id (+ X-Tenant-Rate-Limit, et X-User-Role / X-Partner-Type
+ * pour le JWT) sont RÉÉCRITS côté gateway → aucune usurpation possible par le client. 401 sinon.
  */
 @Component
 public class TenantExtractorFilter implements GatewayFilter {
@@ -57,6 +57,7 @@ public class TenantExtractorFilter implements GatewayFilter {
             .header("X-Tenant-Id", claims.tenantId())
             .header("X-User-Role", claims.role() != null ? claims.role() : "")
             .header("X-User", claims.subject() != null ? claims.subject() : "")
+            .header("X-Partner-Type", claims.partnerType() != null ? claims.partnerType() : "")
             .header("X-Tenant-Rate-Limit", String.valueOf(portalRateLimitTpm))
             .build();
         return chain.filter(exchange.mutate().request(mutated).build());

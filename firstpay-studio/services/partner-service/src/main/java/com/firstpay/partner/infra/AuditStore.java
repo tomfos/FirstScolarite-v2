@@ -16,16 +16,27 @@ public class AuditStore {
 
     public AuditStore(DatabaseClient db) { this.db = db; }
 
-    public Flux<AuditEntry> list(String level, int limit) {
+    public Flux<AuditEntry> list(String level, int limit, boolean archived) {
         DatabaseClient.GenericExecuteSpec spec = db.sql("""
-                SELECT id, actor_email, actor_role, action, target_type, target_id, tenant_id, detail, occurred_at
+                SELECT id, actor_email, actor_role, action, target_type, target_id, tenant_id, detail, occurred_at, archived
                 FROM audit_log
+                WHERE archived = :archived
                 ORDER BY occurred_at DESC
                 LIMIT :limit
                 """)
+            .bind("archived", archived)
             .bind("limit", limit);
         return spec.map(this::map).all()
             .filter(e -> level == null || level.isBlank() || level.equals("all") || level.equals(e.level()));
+    }
+
+    /**
+     * Archive toutes les entrees actuellement actives (n'efface rien, EF-ADM-03 "infalsifiable" :
+     * les entrees restent consultables via le filtre archives, juste sorties de la vue courante).
+     */
+    public Mono<Long> archiveAll() {
+        return db.sql("UPDATE audit_log SET archived = true WHERE archived = false")
+            .fetch().rowsUpdated();
     }
 
     public Mono<Void> append(String actorEmail, String actorRole, String action,
@@ -55,7 +66,8 @@ public class AuditStore {
             buildTarget(r),
             partnerName(detail),
             formatTs(r.get("occurred_at", Instant.class)),
-            level
+            level,
+            Boolean.TRUE.equals(r.get("archived", Boolean.class))
         );
     }
 
@@ -98,5 +110,5 @@ public class AuditStore {
         return ts.toString();
     }
 
-    public record AuditEntry(String id, String kind, String actor, String target, String partner, String ts, String level) {}
+    public record AuditEntry(String id, String kind, String actor, String target, String partner, String ts, String level, boolean archived) {}
 }

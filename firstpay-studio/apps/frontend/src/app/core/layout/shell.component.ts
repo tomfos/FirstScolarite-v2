@@ -3,22 +3,34 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet, NavigationEnd, Rout
 import { filter, map } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '../auth/auth.service';
-import { ROLES_CATALOG, RoleId } from '../auth/roles';
+import { ROLES_CATALOG, RoleId, PartnerType } from '../auth/roles';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { ThemeService } from '../theme/theme.service';
 import { StudioStore } from '../../features/studio/studio.store';
 import { ToastComponent } from '../../shared/components/toast.component';
+import { NotificationBellComponent } from '../../shared/components/notification-bell.component';
+import { ChangePasswordButtonComponent } from '../../shared/components/change-password-button.component';
 
-interface NavItem { id: string; label: string; roles: RoleId[]; }
+/**
+ * partnerTypes : filtre additionnel, orthogonal à `roles` — si présent, l'item n'est
+ * visible que pour les partenaires de ce(s) type(s) fonctionnel(s) (voir PartnerType).
+ * Absent = pas de restriction de type (comportement actuel pour tous les items banque
+ * et les items partenaire communs à tous les types).
+ */
+interface NavItem { id: string; label: string; roles: RoleId[]; partnerTypes?: PartnerType[]; }
 
 const NAV: NavItem[] = [
   { id: 'home', label: 'Tableau de bord', roles: ['partner_admin', 'partner_manager', 'partner_accountant', 'partner_viewer'] },
-  { id: 'studio', label: 'Studio de paiement', roles: ['partner_admin', 'partner_manager', 'partner_viewer'] },
+  { id: 'studio', label: 'Studio de paiement', roles: ['partner_admin', 'partner_manager', 'partner_viewer'], partnerTypes: ['standard'] },
   { id: 'transactions', label: 'Transactions', roles: ['partner_admin', 'partner_manager', 'partner_accountant', 'partner_viewer'] },
+  { id: 'cards', label: 'Commande de cartes', roles: ['partner_admin', 'partner_manager'], partnerTypes: ['emf'] },
   { id: 'users', label: 'Utilisateurs', roles: ['partner_admin'] },
   { id: 'settings', label: 'Paramètres', roles: ['partner_admin'] },
   { id: 'admin_home', label: 'Tableau de bord', roles: ['bank_admin'] },
   { id: 'partners', label: 'Partenaires', roles: ['bank_admin'] },
+  { id: 'collections', label: 'Encaissements', roles: ['bank_admin'] },
+  { id: 'card_orders_admin', label: 'Commandes de cartes', roles: ['bank_admin'] },
+  { id: 'messages', label: 'Messages', roles: ['bank_admin'] },
   { id: 'transactions_all', label: 'Transactions plateforme', roles: ['bank_admin'] },
   { id: 'audit', label: "Journal d'audit", roles: ['bank_admin'] },
   { id: 'settings_platform', label: 'Paramètres plateforme', roles: ['bank_admin'] },
@@ -27,20 +39,22 @@ const NAV: NavItem[] = [
 ];
 
 const BREADCRUMB: Record<string, string> = {
-  home: 'Tableau de bord', studio: 'Studio', transactions: 'Transactions', users: 'Utilisateurs',
-  settings: 'Paramètres', admin_home: 'Supervision', partners: 'Partenaires',
-  transactions_all: 'Transactions plateforme', audit: 'Audit', settings_platform: 'Paramètres plateforme',
-  cashier: 'Caisse', cashier_history: 'Mes encaissements',
+  home: 'Tableau de bord', studio: 'Studio', transactions: 'Transactions', cards: 'Commande de cartes',
+  users: 'Utilisateurs', settings: 'Paramètres', admin_home: 'Supervision', partners: 'Partenaires',
+  collections: 'Encaissements', card_orders_admin: 'Commandes de cartes', messages: 'Messages',
+  transactions_all: 'Transactions plateforme', audit: 'Audit',
+  settings_platform: 'Paramètres plateforme', cashier: 'Caisse', cashier_history: 'Mes encaissements',
 };
 
 @Component({
   selector: 'fp-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, RouterModule, ToastComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, RouterModule, ToastComponent, NotificationBellComponent, ChangePasswordButtonComponent],
   styleUrl: './shell.component.scss',
   template: `
     <div class="shell">
-      <aside class="sidebar">
+      @if (sidebarOpen()) { <div class="sidebar-backdrop" (click)="sidebarOpen.set(false)"></div> }
+      <aside class="sidebar" [class.open]="sidebarOpen()">
         <div class="brand">
           <div class="logo">FC</div>
           <div>
@@ -50,7 +64,7 @@ const BREADCRUMB: Record<string, string> = {
         </div>
         <nav>
           @for (it of items(); track it.id) {
-            <a [routerLink]="['/', it.id]" routerLinkActive="active" class="nav-item">{{ it.label }}</a>
+            <a [routerLink]="['/', it.id]" routerLinkActive="active" class="nav-item" (click)="sidebarOpen.set(false)">{{ it.label }}</a>
           }
         </nav>
         <div class="foot">
@@ -61,6 +75,7 @@ const BREADCRUMB: Record<string, string> = {
 
       <div class="main">
         <header class="topbar">
+          <button class="menu-toggle" type="button" (click)="sidebarOpen.set(!sidebarOpen())" aria-label="Ouvrir le menu">☰</button>
           <div class="crumb">
             <div class="crumb-label">{{ roleDef()?.side === 'bank' ? 'Plateforme' : 'Partenaire' }} › {{ breadcrumb() }}</div>
             <div class="crumb-row">
@@ -80,6 +95,8 @@ const BREADCRUMB: Record<string, string> = {
             </div>
           </div>
           <div class="topbar-right">
+            @if (!auth.isBank()) { <fp-notification-bell /> }
+            @if (!hasSettingsAccess()) { <fp-change-password-button /> }
             <button class="theme-toggle" type="button" (click)="theme.toggle()"
                     [attr.aria-label]="theme.resolved() === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'"
                     [attr.title]="theme.resolved() === 'dark' ? 'Thème clair' : 'Thème sombre'">
@@ -131,10 +148,23 @@ export class ShellComponent implements OnInit {
     this.studioStore.loadFromApi();
   }
 
+  /** Menu latéral escamotable sous ~900px (voir shell.component.scss) — fermé par défaut,
+   * y compris au chargement d'un écran large ; la media query masque le bouton ☰ et le
+   * fond au-dessus du seuil, donc l'état du signal est sans effet visible en desktop. */
+  readonly sidebarOpen = signal(false);
   readonly roleDef = this.auth.roleDef;
+  /** Rôles avec un écran Paramètres propre (partner_admin, bank_admin) y changent leur mot
+   * de passe directement ; les autres (bank_cashier, manager/accountant/viewer) n'ont aucun
+   * écran Paramètres, d'où le cadenas topbar en repli pour eux uniquement. */
+  readonly hasSettingsAccess = computed(() => {
+    const modules = this.roleDef()?.modules ?? [];
+    return modules.includes('settings') || modules.includes('settings_platform');
+  });
   readonly items = computed(() => {
     const role = this.auth.effectiveRole();
-    return role ? NAV.filter((n) => n.roles.includes(role)) : [];
+    if (!role) return [];
+    const partnerType = this.auth.effectivePartnerType();
+    return NAV.filter((n) => n.roles.includes(role) && (!n.partnerTypes || (!!partnerType && n.partnerTypes.includes(partnerType))));
   });
   readonly sideLabel = computed(() => (this.auth.isBank() ? 'Console superviseur' : 'Portail partenaire'));
   readonly partner = computed(() =>
@@ -143,12 +173,12 @@ export class ShellComponent implements OnInit {
   exitImpersonate() {
     this.auth.exitImpersonate();
     const home = ROLES_CATALOG[this.auth.user()!.role].home;
-    this.router.navigate(['/', home]);
+    this.router.navigate(['/', home], { replaceUrl: true });
   }
 
   logout() {
     this.auth.logout();
     this.tenant.clear();
-    this.router.navigate(['/login']);
+    this.router.navigate(['/login'], { replaceUrl: true });
   }
 }

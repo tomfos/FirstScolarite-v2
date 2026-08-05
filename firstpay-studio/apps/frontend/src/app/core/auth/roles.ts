@@ -5,6 +5,14 @@ export type RoleId =
   | 'bank_admin' | 'bank_cashier'
   | 'partner_admin' | 'partner_manager' | 'partner_accountant' | 'partner_viewer';
 
+/**
+ * Axe fonctionnel du partenaire, orthogonal au rôle hiérarchique ci-dessus (un
+ * partner_admin EMF et un partner_admin standard ont les mêmes droits d'admin, mais
+ * pas les mêmes modules). 'standard' = comportement actuel inchangé ; 'emf' = premier
+ * type fonctionnel introduit (accès commande de cartes / suivi des ventes).
+ */
+export type PartnerType = 'standard' | 'emf';
+
 export interface RoleDef {
   label: string;
   side: Side;
@@ -22,7 +30,7 @@ export const ROLES_CATALOG: Record<RoleId, RoleDef> = {
     desc: "Accès complet à la plateforme First Collect. Supervise tous les partenaires, accède à l'audit, débogue les interfaces, dénoue les litiges.",
     perms: ['*', 'platform.read', 'platform.write', 'partners.manage', 'audit.read', 'impersonate', 'tx.refund'],
     home: 'admin_home',
-    modules: ['admin_home', 'partners', 'transactions_all', 'audit', 'settings_platform'],
+    modules: ['admin_home', 'partners', 'collections', 'card_orders_admin', 'messages', 'transactions_all', 'audit', 'settings_platform'],
   },
   bank_cashier: {
     label: 'Caissière Agence', side: 'bank', color: '#7C3AED', bg: '#F1ECFE',
@@ -36,14 +44,19 @@ export const ROLES_CATALOG: Record<RoleId, RoleDef> = {
     desc: "Contrôle complet de l'espace du partenaire. Crée et publie des interfaces, gère l'équipe, importe des données, configure la marque et les notifications.",
     perms: ['studio.*', 'tx.*', 'users.*', 'settings.*'],
     home: 'home',
-    modules: ['home', 'studio', 'transactions', 'users', 'settings'],
+    // 'cards' n'est accessible que si le partenaire est EMF, 'studio' seulement s'il est
+    // standard (un EMF vend déjà via sa propre plateforme externe — SELECT/PayWay — donc
+    // n'a pas besoin de créer des interfaces de paiement firstpay) — voir NavItem.partnerTypes
+    // dans shell.component.ts et moduleGuard. Présents ici pour autoriser le rôle ; la
+    // restriction de type s'applique en plus, pas à la place.
+    modules: ['home', 'studio', 'transactions', 'users', 'settings', 'cards'],
   },
   partner_manager: {
     label: 'Gestionnaire Partenaire', side: 'partner', color: '#2563EB', bg: '#E8F0FE',
     desc: "Crée et modifie les interfaces, consulte et exporte les transactions. N'invite pas de membres et ne modifie pas la marque.",
     perms: ['studio.read', 'studio.write', 'tx.read', 'tx.export'],
     home: 'home',
-    modules: ['home', 'studio', 'transactions'],
+    modules: ['home', 'studio', 'transactions', 'cards'],
   },
   partner_accountant: {
     label: 'Comptable Partenaire', side: 'partner', color: '#1F8A5B', bg: '#E3F1E9',
@@ -63,14 +76,15 @@ export const ROLES_CATALOG: Record<RoleId, RoleDef> = {
 
 export interface Account {
   id: string; email: string; name: string; role: RoleId;
-  agency?: string; partnerName?: string;
+  agency?: string; partnerName?: string; partnerType?: PartnerType;
 }
 
 export const DEMO_ACCOUNTS: Account[] = [
   { id: 'u-admin-bk', email: 'admin.banque@afrilandfirstbank.com', name: 'Cécile Mvondo', role: 'bank_admin', agency: 'Siège · Yaoundé' },
   { id: 'u-caisse-1', email: 'caisse.bonanjo@afrilandfirstbank.com', name: 'Sylvie Atangana', role: 'bank_cashier', agency: 'Agence Bonanjo · Douala' },
-  { id: 'u-padmin', email: 'jospinleunou@softtech.cm', name: 'Jospin Leunou', role: 'partner_admin', partnerName: 'SOFT TECHNOLOGIES' },
-  { id: 'u-pmgr', email: 'marie.ngono@softtech.cm', name: 'Marie Ngono', role: 'partner_manager', partnerName: 'SOFT TECHNOLOGIES' },
-  { id: 'u-pacc', email: 'd.essomba@softtech.cm', name: 'Daniel Essomba', role: 'partner_accountant', partnerName: 'SOFT TECHNOLOGIES' },
-  { id: 'u-pview', email: 's.mbarga@softtech.cm', name: 'Sophie Mbarga', role: 'partner_viewer', partnerName: 'SOFT TECHNOLOGIES' },
+  { id: 'u-padmin', email: 'jospinleunou@softtech.cm', name: 'Jospin Leunou', role: 'partner_admin', partnerName: 'SOFT TECHNOLOGIES', partnerType: 'standard' },
+  { id: 'u-pmgr', email: 'marie.ngono@softtech.cm', name: 'Marie Ngono', role: 'partner_manager', partnerName: 'SOFT TECHNOLOGIES', partnerType: 'standard' },
+  { id: 'u-pacc', email: 'd.essomba@softtech.cm', name: 'Daniel Essomba', role: 'partner_accountant', partnerName: 'SOFT TECHNOLOGIES', partnerType: 'standard' },
+  { id: 'u-pview', email: 's.mbarga@softtech.cm', name: 'Sophie Mbarga', role: 'partner_viewer', partnerName: 'SOFT TECHNOLOGIES', partnerType: 'standard' },
+  { id: 'u-emf-admin', email: 'admin@emfdigital.cm', name: 'Awa Ndongo', role: 'partner_admin', partnerName: 'EMF DIGITAL FINANCE', partnerType: 'emf' },
 ];

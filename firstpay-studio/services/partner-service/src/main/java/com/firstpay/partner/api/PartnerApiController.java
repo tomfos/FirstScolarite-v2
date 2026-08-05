@@ -63,8 +63,73 @@ public class PartnerApiController {
                 .thenReturn(res));
     }
 
+    /** Suppression d'un partenaire (statut SUPPRIME, definitive en intention) — administrateur banque. */
+    @DeleteMapping("/api/v1/partners/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> deletePartner(
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @PathVariable UUID id) {
+        if (!"bank_admin".equals(role)) {
+            return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "Seul l'administrateur banque peut supprimer un partenaire"));
+        }
+        return partners.delete(id)
+            .flatMap(n -> n > 0 ? Mono.<Void>empty()
+                : Mono.<Void>error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Partenaire introuvable ou deja supprime")));
+    }
+
+    /** Desactivation reversible d'un partenaire (statut SUSPENDU) — administrateur banque. */
+    @PostMapping("/api/v1/partners/{id}/suspendre")
+    public Mono<PartnerDto> suspendPartner(
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @PathVariable UUID id) {
+        if (!"bank_admin".equals(role)) {
+            return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "Seul l'administrateur banque peut suspendre un partenaire"));
+        }
+        return partners.suspend(id)
+            .flatMap(n -> n > 0 ? partners.listPartners().filter(p -> p.id().equals(id.toString())).next()
+                : Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Partenaire introuvable ou pas actif")));
+    }
+
+    /** Reactivation d'un partenaire suspendu — administrateur banque. */
+    @PostMapping("/api/v1/partners/{id}/reactiver")
+    public Mono<PartnerDto> reactivatePartner(
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @PathVariable UUID id) {
+        if (!"bank_admin".equals(role)) {
+            return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "Seul l'administrateur banque peut reactiver un partenaire"));
+        }
+        return partners.reactivate(id)
+            .flatMap(n -> n > 0 ? partners.listPartners().filter(p -> p.id().equals(id.toString())).next()
+                : Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Partenaire introuvable ou pas suspendu")));
+    }
+
+    /** Change le type fonctionnel d'un partenaire (ex. standard <-> emf) — administrateur banque. */
+    @PatchMapping("/api/v1/partners/{id}/type")
+    public Mono<PartnerDto> updatePartnerType(
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @PathVariable UUID id,
+            @RequestBody UpdatePartnerTypeRequest req) {
+        if (!"bank_admin".equals(role)) {
+            return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "Seul l'administrateur banque peut modifier le type d'un partenaire"));
+        }
+        if (req == null || req.partnerType() == null || req.partnerType().isBlank()) {
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Type de partenaire requis"));
+        }
+        return partners.updateType(id, req.partnerType())
+            .flatMap(n -> n > 0 ? partners.listPartners().filter(p -> p.id().equals(id.toString())).next()
+                : Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Partenaire introuvable")));
+    }
+
     public record ImpersonateResponse(String token, String tenantId, String partner,
-                                      String code, String shortCode, String sector, String tokenType) {}
+                                      String code, String shortCode, String sector, String partnerType,
+                                      String tokenType) {}
 
     /**
      * Émet un JWT de délégation (partner_admin) pour qu'un bank_admin ouvre le portail
@@ -84,11 +149,11 @@ public class PartnerApiController {
             .flatMap(t -> partners.listPartners()
                 .filter(p -> p.id().equals(t.id()))
                 .next()
-                .defaultIfEmpty(new PartnerDto(t.id(), t.code(), "", t.name(), "", "ACTIVE", 0))
+                .defaultIfEmpty(new PartnerDto(t.id(), t.code(), "", t.name(), "", "standard", "ACTIVE", 0))
                 .map(p -> {
-                    String token = jwt.issue(subject, t.id(), "partner_admin", t.name());
+                    String token = jwt.issue(subject, t.id(), "partner_admin", t.name(), p.partnerType());
                     return new ImpersonateResponse(token, t.id(), t.name(), t.code(),
-                        p.shortCode(), p.sector(), "Bearer");
+                        p.shortCode(), p.sector(), p.partnerType(), "Bearer");
                 }))
             .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Partenaire introuvable")));
     }
@@ -155,5 +220,22 @@ public class PartnerApiController {
     @PutMapping("/api/v1/settings")
     public Mono<SettingsDto> saveSettings(@RequestHeader("X-Tenant-Id") UUID tenantId, @RequestBody SettingsDto settings) {
         return partners.saveSettings(tenantId, settings);
+    }
+
+    /**
+     * Régénère l'API-key du tenant (invalide l'ancienne) — réservé à partner_admin, seul rôle
+     * avec accès à l'écran Sécurité. Renvoyée EN CLAIR une seule fois, comme à la création.
+     */
+    @PostMapping("/api/v1/settings/regenerer-cle-api")
+    public Mono<RegenerateApiKeyResponse> regenerateApiKey(
+            @RequestHeader("X-Tenant-Id") UUID tenantId,
+            @RequestHeader(value = "X-User-Role", required = false) String role) {
+        if (!"partner_admin".equals(role)) {
+            return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "Seul l'administrateur du partenaire peut régénérer la clé API"));
+        }
+        return partners.regenerateApiKey(tenantId)
+            .map(RegenerateApiKeyResponse::new)
+            .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Partenaire introuvable")));
     }
 }

@@ -11,7 +11,9 @@ import java.util.Map;
 /**
  * Émission et vérification de JWT HS256, sans dépendance externe (HMAC-SHA256 via
  * {@link javax.crypto.Mac}). Utilisé pour les sessions du portail : le token porte
- * {@code sub} (email), {@code tenantId}, {@code role} et {@code partner}.
+ * {@code sub} (email), {@code tenantId}, {@code role}, {@code partner} et
+ * {@code partnerType} (axe de différenciation du partenaire — EMF, etc. — orthogonal
+ * au rôle hiérarchique ; vide pour les comptes côté banque).
  *
  * <p>Volontairement minimal (HS256, claims plats string/long) : suffisant pour des
  * sessions de portail signées symétriquement par les services internes. Le secret doit
@@ -31,7 +33,7 @@ public final class JwtService {
     }
 
     /** Émet un token signé pour la session de portail. */
-    public String issue(String subject, String tenantId, String role, String partner) {
+    public String issue(String subject, String tenantId, String role, String partner, String partnerType) {
         long now = Instant.now().getEpochSecond();
         String header = b64("{\"alg\":\"HS256\",\"typ\":\"JWT\"}".getBytes(StandardCharsets.UTF_8));
         Map<String, Object> claims = new LinkedHashMap<>();
@@ -39,6 +41,7 @@ public final class JwtService {
         claims.put("tenantId", tenantId);
         claims.put("role", role);
         claims.put("partner", partner);
+        claims.put("partnerType", partnerType != null ? partnerType : "");
         claims.put("iat", now);
         claims.put("exp", now + ttlSeconds);
         String payload = b64(toJson(claims).getBytes(StandardCharsets.UTF_8));
@@ -61,10 +64,11 @@ public final class JwtService {
         Map<String, String> map = parseFlatJson(json);
         long exp = Long.parseLong(map.getOrDefault("exp", "0"));
         if (exp < Instant.now().getEpochSecond()) throw new JwtException("Token expiré");
-        return new Claims(map.get("sub"), map.get("tenantId"), map.get("role"), map.get("partner"), exp);
+        return new Claims(map.get("sub"), map.get("tenantId"), map.get("role"), map.get("partner"),
+            map.get("partnerType"), exp);
     }
 
-    public record Claims(String subject, String tenantId, String role, String partner, long exp) {}
+    public record Claims(String subject, String tenantId, String role, String partner, String partnerType, long exp) {}
 
     public static final class JwtException extends RuntimeException {
         public JwtException(String message) { super(message); }

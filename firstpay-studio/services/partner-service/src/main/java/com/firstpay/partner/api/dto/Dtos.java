@@ -33,14 +33,19 @@ public final class Dtos {
         String establishment
     ) {}
 
-    public record PartnerDto(String id, String code, String shortCode, String name, String sector, String status, int interfaceCount) {}
+    public record PartnerDto(String id, String code, String shortCode, String name, String sector,
+                             String partnerType, String status, int interfaceCount) {}
 
     /**
      * Création d'un partenaire par l'administrateur banque.
      * settlementAccount = numéro du compte qui recevra les fonds collectés ; accountHolder = titulaire.
+     * partnerType = axe fonctionnel du partenaire (ex. "emf"), orthogonal au rôle hiérarchique de ses
+     * utilisateurs ; défaut "standard" si absent (voir {@link com.firstpay.partner.infra.PartnerStore}).
      */
-    public record CreatePartnerRequest(String name, String sector, String adminName, String adminEmail,
+    public record CreatePartnerRequest(String name, String sector, String partnerType, String adminName, String adminEmail,
                                        String settlementAccount, String accountHolder, String settlementBank) {}
+
+    public record UpdatePartnerTypeRequest(String partnerType) {}
 
     /** Réponse de création : le partenaire + l'API-key + les identifiants temporaires (affichés une fois). */
     public record CreatePartnerResponse(PartnerDto partner, String apiKey, String adminEmail, String tempPassword) {}
@@ -80,6 +85,12 @@ public final class Dtos {
 
     public record UserDto(String id, String name, String email, String role, String status) {}
 
+    /** Demande de réinitialisation ("mot de passe oublié") — email seul, réponse toujours générique. */
+    public record ForgotPasswordRequest(String email) {}
+
+    /** Nouvelle clé API générée (régénération), affichée une seule fois — même principe que CreatePartnerResponse. */
+    public record RegenerateApiKeyResponse(String apiKey) {}
+
     /** Marque du commerçant exposée à la page payeur publique (rien de sensible). */
     public record PublicMerchantDto(String name, String shortCode, String logoUrl, String brandColor) {}
 
@@ -117,6 +128,36 @@ public final class Dtos {
     ) {}
 
     public record SettingsDto(String tenantId, String logoUrl, String logoName, String brandColor, Map<String, Object> notifications) {}
+
+    /* ------------------------ Commandes de cartes prepayees (partenaires EMF) ------------------------ */
+
+    /**
+     * Commande de cartes prepayees : une simple quantite, pas de prix ni de type de carte.
+     * quantiteVendue/quantiteActivee sont de simples compteurs mis a jour par une action
+     * bank_admin (enregistrer-ventes) -- pas de pipeline d'activation individuelle par carte,
+     * cette plateforme n'a pas d'equivalent dossier KYC/client pour y accrocher ca.
+     * partnerName n'est renseigne que sur la vue banque (GET /card-orders/all).
+     */
+    public record CardOrderDto(String id, String tenantId, String partnerName, int quantite, String dateCommande,
+                               String statut, int quantiteVendue, int quantiteActivee) {}
+
+    public record CreateCardOrderRequest(int quantite) {}
+
+    /** Valeurs absolues (pas des deltas), bornees a la quantite commandee par le store. */
+    public record EnregistrerVentesRequest(int quantiteVendue, int quantiteActivee) {}
+
+    /* ------------------------ Messagerie banque -> partenaires ------------------------ */
+
+    /**
+     * Message envoye par la banque. tenantId renseigne = cible un partenaire ; tenantId absent =
+     * diffusion a tous les partenaires. targetLabel (nom du partenaire ou "Tous les partenaires")
+     * n'est renseigne que sur la vue banque (GET /messages/sent) ; read n'a de sens que sur la vue
+     * partenaire (GET /messages), relatif au tenant appelant.
+     */
+    public record MessageDto(String id, String tenantId, String targetLabel, String subject, String body,
+                             String senderName, String createdAt, boolean read) {}
+
+    public record SendMessageRequest(String tenantId, String subject, String body) {}
 
     /* ------------------------ Répertoire étudiants (matricule) ------------------------ */
 

@@ -1,12 +1,15 @@
 .page { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
-.head { padding: 18px 24px; }
+.head { padding: 18px 24px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .eyebrow { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
 .title { font-size: 22px; font-weight: 700; margin-top: 2px; }
 .subtitle { font-size: 12.5px; color: var(--text-3); margin-top: 3px; }
+.archive-btn { padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); font-weight: 600; font-size: 13px; white-space: nowrap; }
+.archive-btn:disabled { opacity: .5; }
 
-.filters { padding: 16px 24px; display: flex; gap: 8px; border-bottom: 1px solid var(--border); }
+.filters { padding: 16px 24px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
 .chip { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); font-size: 12.5px; font-weight: 600; }
 .chip.on { background: var(--text); color: #fff; border-color: var(--text); }
+.sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
 
 .body { flex: 1; overflow: auto; padding: 24px; }
 .list { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); }

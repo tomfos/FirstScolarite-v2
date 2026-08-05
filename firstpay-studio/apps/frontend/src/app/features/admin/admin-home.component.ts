@@ -55,6 +55,8 @@ export class AdminHomeComponent implements OnInit, OnDestroy {
   readonly modules = [
     { route: 'partners', color: '#E53935', glyph: '🏢', title: 'Partenaires',
       desc: 'Liste de tous les partenaires enrôlés. Recherche, statut, accès en délégation pour intervenir à leur place.', cta: 'Superviser' },
+    { route: 'collections', color: '#1F8A5B', glyph: '₣', title: 'Encaissements',
+      desc: 'Tous les encaissements caisse, toutes agences confondues. Recherche, filtres, export pour la réconciliation.', cta: 'Administrer' },
     { route: 'transactions_all', color: '#2563EB', glyph: '∿', title: 'Transactions plateforme',
       desc: 'Vision exhaustive de toutes les transactions, tous partenaires confondus. Outils de remboursement et de réconciliation.', cta: 'Inspecter' },
     { route: 'audit', color: '#7C3AED', glyph: '⛨', title: "Journal d'audit",
