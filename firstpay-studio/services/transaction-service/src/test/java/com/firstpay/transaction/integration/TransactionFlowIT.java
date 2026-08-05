@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
+import org.springframework.r2dbc.connection.R2dbcTransactionManager;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -95,7 +96,8 @@ class TransactionFlowIT {
         EventStore eventStore = new EventStore(db);
         OutboxEventPublisher outbox = new OutboxEventPublisher(db);
         TransactionEventStream events = new TransactionEventStream();
-        handler = new TransactionCommandHandler(store, redis, outbox, eventStore, events);
+        R2dbcTransactionManager txManager = new R2dbcTransactionManager(cf);
+        handler = new TransactionCommandHandler(store, redis, outbox, eventStore, events, txManager);
     }
 
     @AfterAll
