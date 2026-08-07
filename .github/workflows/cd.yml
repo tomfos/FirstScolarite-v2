@@ -1,0 +1,45 @@
+name: CD (déploiement)
+
+# Volontairement PAS de déclencheur automatique (push/pull_request) pour l'instant :
+# il n'existe pas encore de serveur cible. Ce workflow ne se lance qu'à la main,
+# depuis l'onglet Actions → CD (déploiement) → Run workflow.
+#
+# Pour l'activer plus tard, une fois qu'un serveur est disponible :
+#   1. Ajouter les secrets du dépôt (Settings → Secrets and variables → Actions) :
+#      - DEPLOY_HOST       : IP ou nom de domaine du serveur
+#      - DEPLOY_USER       : utilisateur SSH (ex: deploy)
+#      - DEPLOY_SSH_KEY    : clé privée SSH correspondante
+#   2. Décommenter le bloc "push:" ci-dessous si un déploiement automatique
+#      à chaque merge sur master est souhaité (sinon, rester en manuel = plus prudent).
+on:
+  workflow_dispatch: {}
+  # push:
+  #   branches: [master]
+
+jobs:
+  deploy:
+    name: Déploiement vers le serveur de production
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Vérifier que le serveur cible est configuré
+        run: |
+          if [ -z "${{ secrets.DEPLOY_HOST }}" ]; then
+            echo "::error::Secret DEPLOY_HOST manquant — aucun serveur n'est encore configuré."
+            echo "::error::Voir le commentaire en tête de .github/workflows/cd.yml pour l'activer."
+            exit 1
+          fi
+
+      - name: Déployer (git pull + docker compose up --build)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/firstpay-studio
+            git pull origin master
+            cd firstpay-studio
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+            docker image prune -f
